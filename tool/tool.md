@@ -3,4 +3,4 @@
 
 [main page](../entry.md)
 
-* [camera](./camera.md)
+* [ide](./ide.md)

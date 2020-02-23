@@ -152,3 +152,30 @@
         * 这个系统要解决什么样的问题？
         * 这个系统可能会造成什么样的问题？
     * 时间估算 最乐观的时间*1.5 或者 三点估算法
+
+# 如何学习
+
+参考： learning how to learn, [怎么高效地记忆自己看过的东西？](https://www.zhihu.com/question/27459299)， [如何长时间高效学习？](https://www.zhihu.com/question/28358499)
+
+* 知识点
+    * what is learning
+        * focus mode & diffuse mode
+        * long-term memory & working memory
+        * chunking & build chunk by (practice & understand & focus)
+    * chunking
+        * how chunk is formed 
+        * what is illusions of competence
+        * how brain works unconsiciously
+        * interleave & overlearn & Einstellung
+* 方法
+    1. focus on the process rather than product
+    2. pomodoro method
+    3. weekly list of key tasks, and daily to-do list
+    4. give a relax
+    5. metaphor & analogy in learning
+    6. **recall & practice after learning**
+    7. interleaving learning material makes more connections and creative thought
+    8. the law of serendipity
+    9. **a daily list & a week list & a long tern list(before sleep) & quitting time & start with most difficult task**
+    10. not fool yourself and you are the easiest man to fool (bring together two hemispheres to work, right hemisphere for global view)
+    11. **explain to others help build your own understanding**

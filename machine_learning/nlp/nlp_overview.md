@@ -1,7 +1,7 @@
 
 [toc]
 
-[main page](../entry.md)
+[main page](../../entry.md)
 
 ### 常见的NLP任务及对应数据集
 |name|full name|type|subtype|comment|

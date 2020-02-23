@@ -52,9 +52,9 @@ reference or knowledge points of this part:
   
 ## img-part
 using markdown keyword:  
-![img1](./languages_cpp.png)  
+![img1](./data/languages_cpp.png)  
 using html keyword:  
-<img src="./languages_cpp.png" width=50%>  
+<img src="./data/languages_cpp.png" width=50%>  
 reference or knowledge points of this part:
 * [Markdown 图片](https://www.runoob.com/markdown/md-image.html)  
   
@@ -62,7 +62,7 @@ reference or knowledge points of this part:
 in line equation:$f(x)$
 out line equation:
 $$
-a = b + \frac1c
+a = b + \frac1c + \bar{a} + \hat{a} + \epsilon
 $$
 $$
 a_{ij} = \sum_{k}^N b_{ijk} \tag{1}
