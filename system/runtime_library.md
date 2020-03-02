@@ -12,8 +12,10 @@
     * temalloc: google
   * 框架原理
     * ptmalloc，根据分配大小选择不同流程，fastbin针对小内存
-![structure of ptmalloc](./data/runtime_library/ptmalloc-structure.png)
-![ptmalloc flow](./data/runtime_library/ptmalloc-alloc-flow.png)
+
+    ![structure of ptmalloc](./data/runtime_library/ptmalloc-structure.png)
+
+    ![ptmalloc flow](./data/runtime_library/ptmalloc-alloc-flow.png)
   * 框架比较
 * 内存管理器的目标
   * 额外的空间损耗尽量少

@@ -38,13 +38,14 @@
 * 实时操作系统比较
   * 实时操作系统的实现都十分精简  
 
-|名称|文档|代码|评价|
-|---|---|---|---|
-|tecentos tiny||||
-|[rt-thread](https://www.rt-thread.org/document/site/)|齐全|精简|参考了Linux的设计思想,支持性号|
-|freertos|||代码严谨度高|
-|liteos||||
-|alios||||
+    |名称|文档|代码|评价|
+    |---|---|---|---|
+    |tecentos tiny||||
+    |[rt-thread](https://www.rt-thread.org/document/site/)|齐全|精简|参考了Linux的设计思想,支持性号|
+    |freertos|||代码严谨度高|
+    |liteos||||
+    |alios||||
+  
   * 参考：[RT-Thread、liteos、TencentOS tiny初学者到底该选择什么RTOS？](https://zhuanlan.zhihu.com/p/79246791)
 * 车载实时操作系统
   * uITRON：实时操作系统的一种规范，主要应用于车载领域。比如，uITRON FreeRTOS，满足uITRON规范的FreeRTOS

@@ -5,3 +5,4 @@
 
 * [keywords](./keywords.md)
 * [geometry](./geometry.md)
+* [matrix](./matrix.md)

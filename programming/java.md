@@ -1,7 +1,7 @@
 
 [toc]
 
-[programming](./java.md)
+[programming](./prog.md)
 
 * java virtual machine notes
     * ***BYTECODE***
