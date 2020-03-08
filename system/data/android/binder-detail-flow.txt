@@ -1,0 +1,282 @@
+servicemanager建立之路
+1打开Binder设备文件
+bs = binder_open(128*1024);
+2告诉Binder驱动程序自己是Binder上下文管理者
+binder_become_context_manager(bs)
+3进入一个无穷循环，充当Server的角色，等待Client的请求
+binder_loop(bs, svcmgr_handler)  (BINDER_SERVICE_MANAGER) ((void*) 0)
+
+struct binder_state  
+{  
+    int fd;  
+    void *mapped;  
+    unsigned mapsize;  
+};
+
+1
+bs->fd = open("/dev/binder", O_RDWR); 
+        open->binder_open  binder_proc
+bs->mapsize = mapsize;
+bs->mapped = mmap(NULL, mapsize, PROT_READ, MAP_PRIVATE, bs->fd, 0);  
+       binder_mmap(struct file *filp, struct vm_area_struct *vma)
+       vm_area_struct *vma 进程空间0-3G
+       struct vm_struct *area;  内核空间(3G + 896M + 8M) ~ 4G
+       area = get_vm_area(vma->vm_end - vma->vm_start, VM_IOREMAP);
+       proc->buffer = area->addr;  
+       proc->user_buffer_offset = vma->vm_start - (uintptr_t)proc->buffer;
+在binder_thread_read中将会使用该offset
+tr.data.ptr.buffer = (void *)t->buffer->data +
+proc->user_buffer_offset;
+Client要将一块内存数据传递给Server，一般的做法是，Client将这块数据从它的进程空间拷贝到内核空间中，然后内核再将这个数据从内核空 间拷贝到Server的进程空间，这样，Server就可以访问这个数据了。但是在这种方法中，执行了两次内存拷贝操作，而采用我们上面提到的方法，只需 要把Client进程空间的数据拷贝一次到内核空间，然后Server与内核共享这个数据就可以了，整个过程只需要执行一次内存拷贝，提高了效率。
+binder_update_page_range
+首先是调用alloc_page来分配一个物理页面，这个函数返回一个struct page物理页面描述符，根据这个描述的内容初始化好struct vm_struct tmp_area结构体，然后通过map_vm_area将这个物理页面插入到tmp_area描述的内核空间去，接着通过page_addr + proc->user_buffer_offset获得进程虚拟空间地址，并通过vm_insert_page函数将这个物理页面插入到进程地址空 间去，参数vma代表了要插入的进程的地址空间。
+2
+binder_become_context_manager(bs)
+     ioctl(bs->fd, BINDER_SET_CONTEXT_MGR, 0);  
+          binder_ioctl
+          struct binder_node
+              binder_context_mgr_uid = current->cred->euid; 
+              binder_context_mgr_node = binder_new_node(proc, NULL, NULL); 
+3
+     binder_loop
+         struct binder_write_read bwr;用户态
+         res = ioctl(bs->fd, BINDER_WRITE_READ, &bwr); 
+用户空间程序和Binder驱动程序交互大多数都是通过BINDER_WRITE_READ命令的，write_bufffer和read_buffer 所指向的数据结构还指定了具体要执行的操作，write_bufffer和read_buffer所指向的结构体是 struct binder_transaction_data
+           binder_ioctl
+              case BINDER_WRITE_READ
+              bwr write_size & read_size -->binder_thread_write & binder_thread_read
+
+工作
+         1. 打开/dev/binder文件：open("/dev/binder", O_RDWR);
+        2. 建立128K内存映射：mmap(NULL, mapsize, PROT_READ, MAP_PRIVATE, bs->fd, 0);
+        3. 通知Binder驱动程序它是守护进程：binder_become_context_manager(bs);
+        4. 进入循环等待请求的到来：binder_loop(bs, svcmgr_handler);
+        在这个过程中，在Binder驱动程序中建立了一个struct binder_proc结构、一个struct  binder_thread结构和一个struct binder_node结构，这样，Service Manager就在Android系统的进程间通信机制Binder担负起守护进程的职责了。
+
+
+
+
+
+
+数据结构分析
+binder_write_read
+-》write_buffer&read_buffer
+binder_transaction_data
+{  
+    union {  
+        size_t  handle; /* target descriptor of command transaction */  
+        void    *ptr;   /* target descriptor of return transaction */  
+    } target;  
+    void        *cookie;    /* target object cookie */  
+..........
+    union {  
+        struct {  
+            /* transaction data */  
+            const void  *buffer;          ------->flat_binder_object 
+            /* offsets from buffer to flat_binder_object structs */  
+            const void  *offsets;  
+        } ptr;  
+        uint8_t buf[8];  
+    } data;  
+};  
+
+联合体target，当这个BINDER_WRITE_READ命令的目标对象是本地Binder实体时，就使用ptr来表示这个对象在本进程中的地址， 否则就使用handle来表示这个Binder实体的引用。只有目标对象是Binder实体时，cookie成员变量才有意义，表示一些附加数据，由 Binder实体来解释这个个附加数据。
+如果一个进程A传递了一个Binder实体或Binder引用给进程B，那么，Binder驱动程序就需要介入维护这个Binder实体或者引用的引用计 数，防止B进程还在使用这个Binder实体时，A却销毁这个实体，这样的话，B进程就会crash了。所以在传输数据时，如果数据中含有Binder实 体和Binder引和，就需要告诉Binder驱动程序它们的具体位置，以便Binder驱动程序能够去维护它们。
+data.offsets的作用就在这里了，它指定在data.buffer缓冲区中，所有Binder实体或者引用的偏移位置。每一个Binder实体或者引用，通过struct flat_binder_object 来表示
+flat_binder_object 
+
+{  
+......
+    union {  
+        void        *binder;    /* local object */  
+        signed long handle;     /* remote object */  
+    };  
+  ......
+    /* extra data associated with local object */  
+    void            *cookie;  
+};  
+binder表示这是一个Binder实体，handle表示这是一个Binder引用，当这是一个Binder实体时，cookie才有意义，表示附加数据，由进程自己解释。
+
+
+
+
+
+
+service和client获取sm接口
+sp<IServiceManager> defaultServiceManager(); 
+     if (gDefaultServiceManager != NULL) return gDefaultServiceManager; 
+     gDefaultServiceManager = interface_cast<IServiceManager>(ProcessState::self()->getContextObject(NULL));
+     gDefaultServiceManager = interface_cast<IServiceManager>(new BpBinder(0)); 
+         return INTERFACE::asInterface(obj); 
+         intr = new BpServiceManager(obj); 
+     gDefaultServiceManager = new BpServiceManager(new BpBinder(0)); 
+
+对Server来说，就是调用IServiceManager::addService这个接口来和Binder驱动程序交互了，即调用 BpServiceManager::addService 。而BpServiceManager::addService又会调用通过其基类BpRefBase的成员函数remote获得原先创建的 BpBinder实例，接着调用BpBinder::transact成员函数。在BpBinder::transact函数中，又会调用 IPCThreadState::transact成员函数，这里就是最终与Binder驱动程序交互的地方了。回忆一下前面的类 图，IPCThreadState有一个PorcessState类型的成中变量mProcess，而mProcess有一个成员变量 mDriverFD，它是设备文件/dev/binder的打开文件描述符，因此，IPCThreadState就相当于间接在拥有了设备文件/dev /binder的打开文件描述符，于是，便可以与Binder驱动程序交互了。
+       对Client来说，就是调用IServiceManager::getService这个接口来和Binder驱动程序交互了。具体过程上述Server使用Service Manager的方法是一样的，这里就不再累述了。
+IPCThreadState接收到了Client处的请求后，就会调用 BBinder类的transact函数，并传入相关参数，BBinder类的transact函数最终调用BnMediaPlayerService类 的onTransact函数，于是，就开始真正地处理Client的请求了。
+
+
+
+
+
+
+service向sm注册服务
+
+int main(int argc, char** argv)  
+{  
+    sp<ProcessState> proc(ProcessState::self());                1
+    sp<IServiceManager> sm = defaultServiceManager();   2
+    MediaPlayerService::instantiate();                                     3
+    ProcessState::self()->startThreadPool();                          4
+    IPCThreadState::self()->joinThreadPool();                        5
+}
+
+1
+new ProcessState; 
+ProcessState::ProcessState(): mDriverFD(open_driver())  ...
+              int fd = open("/dev/binder", O_RDWR); 
+              ioctl(fd, BINDER_VERSION, &vers);  
+              result = ioctl(fd, BINDER_SET_MAX_THREADS, &maxThreads);
+     mVMStart = mmap(0, BINDER_VM_SIZE, PROT_READ, MAP_PRIVATE | MAP_NORESERVE, mDriverFD, 0);
+              #define BINDER_VM_SIZE ((1*1024*1024) - (4096 *2))
+     Binder驱动程序就为当前进程预留了BINDER_VM_SIZE大小的内存空间
+3
+defaultServiceManager()->addService(String16("media.player"), new MediaPlayerService()); 
+ 
+virtual status_t addService(const String16& name, const sp<IBinder>& service)  
+    {  
+        Parcel data, reply;  
+        data.writeInterfaceToken(IServiceManager::getInterfaceDescriptor());  
+        data.writeString16(name);  
+        data.writeStrongBinder(service);  
+        status_t err = remote()->transact(ADD_SERVICE_TRANSACTION, data, &reply);  
+        return err == NO_ERROR ? reply.readExceptionCode()   
+    }
+
+Parcel类是用来于序列化进程间通信数据
+     data.writeStrongBinder(service);
+         status_t Parcel::writeStrongBinder(const sp<IBinder>& val)
+              return flatten_binder(ProcessState::self(), val, this);
+                   status_t flatten_binder(const sp<ProcessState>& proc,const sp<IBinder>& binder, Parcel* out)
+{  
+    flat_binder_object obj;   
+    obj.flags = 0x7f | FLAT_BINDER_FLAG_ACCEPTS_FDS;  
+    if (binder != NULL) {  
+        IBinder *local = binder->localBinder();  
+        if (!local) {  
+            BpBinder *proxy = binder->remoteBinder();  
+            if (proxy == NULL) {  
+                LOGE("null proxy");  
+            }  
+            const int32_t handle = proxy ? proxy->handle() : 0;  
+            obj.type = BINDER_TYPE_HANDLE;  
+            obj.handle = handle;  
+            obj.cookie = NULL;  
+        } else {  
+            obj.type = BINDER_TYPE_BINDER;  
+            obj.binder = local->getWeakRefs();  
+            obj.cookie = local;  
+        }  
+    } else {  
+        obj.type = BINDER_TYPE_BINDER;  
+        obj.binder = NULL;  
+        obj.cookie = NULL;  
+    }
+
+MediaPlayerService继承自BBinder类，它是一个本地Binder实体，因此binder->localBinder返回一个BBinder指针，而且肯定不为空
+Binder实体地址的指针local保存在flat_binder_obj的成员变量cookie中
+                 finish_flatten_binder    
+                     *reinterpret_cast<flat_binder_object*>(mData+mDataPos) = val; 
+                     mObjects[mObjectsSize] = mDataPos;
+把flat_binder_obj写到Parcel里面之内，还要记录这个flat_binder_obj在Parcel里面的偏移位置
+     status_t err = remote()->transact(ADD_SERVICE_TRANSACTION, data, &reply);                   
+      status_t BpBinder::transact(...）
+              IPCThreadState::self()->transact(mHandle, code, data, reply, flags);
+                   writeTransactionData(BC_TRANSACTION, flags, handle, code, data, NULL);
+
+        tr.data_size = data.ipcDataSize();  
+        tr.data.ptr.buffer = data.ipcData();  
+        tr.offsets_size = data.ipcObjectsCount()*sizeof(size_t);  
+        tr.data.ptr.offsets = data.ipcObjects(); 
+        mOut.writeInt32(cmd);  
+        mOut.write(&tr, sizeof(tr));         mOut为IPCThreadState类成员  是个Parcel对象
+                   err = waitForResponse(reply);
+                             talkWithDriver(
+                                  binder_write_read bwr;
+                                  bwr.write_size = outAvail;
+                                  bwr.write_buffer = (long unsigned int)mOut.data();
+                                  ioctl(mProcess->mDriverFD, BINDER_WRITE_READ, &bwr)
+                                       static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+                                       
+                                            void __user *ubuf = (void __user *)arg; 
+                                             case BINDER_WRITE_READ:
+                                            copy_from_user(&bwr, ubuf, sizeof(bwr))
+                                            bwr write_size & read_size -->binder_thread_write & binder_thread_read
+                                                 binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,void __user *buffer, int size, signed long *consumed)
+                                                      case BC_TRANSACTION:
+                                                           void __user *ptr = buffer + *consumed;
+                                                           if (copy_from_user(&tr, ptr, sizeof(tr)))
+                                                           binder_transaction(proc, thread, &tr, cmd == BC_REPLY);
+                                                                struct binder_transaction *t;
+                                                                copy_from_user(t->buffer->data, tr->data.ptr.buffer, tr->data_size)
+                                                                copy_from_user(offp, tr->data.ptr.offsets, tr->offsets_size)
+                                                                fp = (struct flat_binder_object *)(t->buffer->data + *offp);
+                                                                node = binder_new_node(proc, fp->binder, fp->cookie);
+-----------------------------------------------------------------------------------------------------------------------------------------------
+                                                 binder_thread_read
+                                                      case BINDER_WORK_TRANSACTION:
+                                                      t = container_of(w, struct binder_transaction, work);
+
+struct binder_node *target_node = t->buffer->target_node;  
+            tr.target.ptr = target_node->ptr;  
+            tr.cookie =  target_node->cookie;
+        tr.data_size = t->buffer->data_size;  
+        tr.offsets_size = t->buffer->offsets_size;  
+        tr.data.ptr.buffer = (void *)t->buffer->data + proc->user_buffer_offset;  
+        tr.data.ptr.offsets = tr.data.ptr.buffer + ALIGN(t->buffer->data_size, sizeof(void *));  
+copy_to_user(ptr, &tr, sizeof(tr))) 
+
+ t->buffer->data所指向的地址是内核空间的，现在要把数据返回给Service Manager进程的用户空间，而Service Manager进程的用户空间是不能访问内核空间的数据的，所以这里要作一下处理。怎么处理呢？我们在学面向对象语言的时候，对象的拷贝有深拷贝和浅拷贝 之分，深拷贝是把另外分配一块新内存，然后把原始对象的内容搬过去，浅拷贝是并没有为新对象分配一块新空间，而只是分配一个引用，而个引用指向原始对象。 Binder机制用的是类似浅拷贝的方法，通过在用户空间分配一个虚拟地址，然后让这个用户空间虚拟地址与 t->buffer->data 这个内核空间虚拟地址指向同一个物理地址，这样就可以实现浅拷贝了。
+
+
+                                             binder_ioctl
+                                  binder_parse(servicemanager)
+                             svcmgr_handler(ptr=bwr.read_buffer)
+                             case SVC_MGR_ADD_SERVICE:  
+                              struct binder_txn *txn = (void *) ptr;
+                        int do_add_service(struct binder_state *bs,uint16_t *s, unsigned len,void *ptr(msg=new MediaPlayerService), unsigned uid)
+
+
+si->ptr = ptr;  
+        si->len = len;  
+        memcpy(si->name, s, (len + 1) * sizeof(uint16_t)); 
+svclist = si; 
+
+把MediaPlayerService这个Binder实体的引用写到一个struct svcinfo结构体中，主要是它的名称和句柄值，然后插入到链接svclist的头部去。这样，Client来向Service Manager查询服务接口时，只要给定服务名称，Service Manger就可以返回相应的句柄值了。
+
+
+
+由于要把这个Binder实体MediaPlayerService交给target_proc，也就是Service Manager来管理，也就是说Service Manager要引用这个MediaPlayerService了，于是通过binder_get_ref_for_node为 MediaPlayerService创建一个引用，servicemanager通过句柄去引用该binder，也就是new MediaPlayerService() 
+                             cmd = mIn.readInt32();
+                             case...
+                             executeCommand(cmd)
+
+5
+result = talkWithDriver();  
+result = executeCommand(cmd); 
+     sp<BBinder> b((BBinder*)tr.cookie); 
+     const status_t error = b->transact(tr.code, buffer, &reply, tr.flags); 
+         BBinder::transact
+              onTransact(code, data, reply, flags); 
+              BnMediaPlayerService::onTransact
+
+new MediaPlayerService()          binder                      service
+obj                                            flat_binder_object          Parcel.writeStrongBinder
+data                                                 Parcel                    Parcel
+tr                                             binder_transaction_data          IPCThreadState.writeTransactionData
+bwr                                          binder_write_read          IPCThreadState.talkWithDriver
+--------------------------------------------------------------------------------------------------------------------
+bwr                                           binder_write_read          binder_ioctl
+tr                                             binder_transaction_data     binder_thread_write & binder_thread_read
+t                                             binder_transaction               binder_transaction
+fp                                              flat_binder_object                binder_transaction

@@ -1,0 +1,73 @@
+how apps are signed when building image?
+1-BSP/build/android.mk
+android-release depends on
+android-release: android-distfs android-recovery selinux android-updatezip
+it will use signtool(build/tools/releasetools/sign_target_files_apks) to sign apk, it use key in BSP/android/device/csr/sirfsoc7/*
+includes release/shared/media/platform key
+android-distfs: android-build
+@$(ECHO) ////////////////////////////////////////////////////////
+@$(ECHO) // Begin to generate the eng verison of android rootfs:
+@$(ECHO) ////////////////////////////////////////////////////////
+@$(ECHO) Sign all the apks...
+@$(CD) $(ANDDIR); $(SIGNTOOL) -d $(ANDSIGNDIR) -o $(OUTANDDIST)/sirfsoc$(ARMVER)-target_files-eng.$(USER).zip \
+$(OUTANDDIST)/sirfsoc$(ARMVER)-target_files-eng.$(USER)-resigned.zip
+
+2-BSP/android/build/tools/releasetools/sign_target_files_apks & BSP/android/build/tools/releasetools/common.py
+call chain
+main
+     SignApks
+        SignApk
+               SignFile
+function SignFile use tool signapk to sign app, it gets app seinfo by unzipping $(OUTANDDIST)/sirfsoc$(ARMVER)-target_files-eng.$(USER).zip
+and reading /META/apkcerts.txt in it
+    cmd = ["java", "-Xmx2048m", "-jar", os.path.join(OPTIONS.search_path, "framework", "signapk.jar")]
+    if whole_file:
+        cmd.append("-w")
+        cmd.extend([key + ".x509.pem", key + ".pk8", input_name, sign_name])
+content in apkcerts.txt like:
+name="CtsVerifier.apk" certificate="build/target/product/security/testkey.x509.pem" private_key="build/target/product/security/testkey.pk8"
+name="CtsAppAccessData.apk" certificate="cts/hostsidetests/appsecurity/certs/cts-testkey2.x509.pem" private_key="cts/hostsidetests/appsecurity/certs/cts-testkey2.pk8"
+name="CtsAppWithData.apk" certificate="cts/hostsidetests/appsecurity/certs/cts-testkey1.x509.pem" private_key="cts/hostsidetests/appsecurity/certs/cts-testkey1.pk8"
+name="CtsExternalStorageApp.apk" certificate="build/target/product/security/testkey.x509.pem" private_key="build/target/product/security/testkey.pk8"
+
+
+
+how apps get information about their certificate?
+1-Android.mk
+./frameworks/base/packages/InputDevices/Android.mk:LOCAL_CERTIFICATE := platform
+2-use default key in BSP/android/build/core/config.mk
+DEFAULT_SYSTEM_DEV_CERTIFICATE := build/target/product/security/testkey
+
+
+
+how system get the secontext of each app when installing?
+1-get the package info by packagemanagerservice
+scanPackageLI
+     assignSeinfoValue
+2-compare the info with seinfo in BSP/android/external/seapp_contexts, like, and get the seinfo
+user=_app domain=untrusted_app type=app_data_file levelFrom=none
+user=_app seinfo=platform domain=platform_app type=platform_app_data_file
+user=_app seinfo=shared domain=shared_app type=platform_app_data_file
+user=_app seinfo=media domain=media_app type=platform_app_data_file
+user=_app seinfo=release domain=release_app type=platform_app_data_file
+3-use installd to set the secontext in accordance with info in seapp_contexts
+installd
+     selinux_android_setfilecon2
+4-package will be installed in /data/data like:
+drwxr-x--x u0_a5 u0_a5 u:object_r:platform_app_data_file:s0 com.android.calendar
+drwxr-x--x u0_a7 u0_a7 u:object_r:platform_app_data_file:s0 com.android.certinstaller
+drwxr-x--x u0_a0 u0_a0 u:object_r:platform_app_data_file:s0 com.android.contacts
+drwxr-x--x u0_a8 u0_a8 u:object_r:platform_app_data_file:s0 com.android.defcontainer
+drwxr-x--x u0_a9 u0_a9 u:object_r:platform_app_data_file:s0 com.android.deskclock
+drwxr-x--x u0_a10 u0_a10 u:object_r:platform_app_data_file:s0 com.android.development
+drwxr-x--x u0_a2 u0_a2 u:object_r:platform_app_data_file:s0 com.android.dreams.basic
+drwxr-x--x u0_a30 u0_a30 u:object_r:platform_app_data_file:s0 com.android.dreams.phototable
+drwxr-x--x u0_a12 u0_a12 u:object_r:platform_app_data_file:s0 com.android.email
+drwxr-x--x u0_a14 u0_a14 u:object_r:platform_app_data_file:s0 com.android.galaxy4
+drwxr-x--x u0_a15 u0_a15 u:object_r:platform_app_data_file:s0 com.android.gallery3d
+
+
+
+how system get the secontext of each app after booting?
+read file from /data/data, use secontext domain convert to convert file secontext to related process secontext
+see http://blog.csdn.net/luoshengyang/article/details/37749383

@@ -52,7 +52,21 @@
         	* 64 KiB - 128KiB = L1C + L2C = 4 + 19 = 23 周期
         	* 256 KiB - 512 KiB = L1_C + L2_C + TLB_L1 = 4 + 19 + 7 = 30 周期
         	* 1 MiB = L1_C + L2_C + TLB_L1 + TLB_L2 = 4 + 19 + 7 +7 = 37 周期
+* cache同步管理
+    * [snooping control unit](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0407e/CDDEHDDG.html)，自动管理cache同步
+    * AXI advanced extended interface 为 AMBA Advanced Microcontroller Bus Architecture 协议中重要的一部分。
+    * The SCU connects one to four Cortex-A9 processors to the memory system through the AXI interfaces. SCU的功能主要为（比方说core 0 和 core 1并发使用ldr等操作时，SCU能有效处理这种对内存的并发操作。）：
+        * maintain data cache coherency between the Cortex-A9 processors
+        * initiate L2 AXI memory accesses
+        * arbitrate between Cortex-A9 processors requesting L2 accesses 
+        * manage ACP accesses.
 
+
+## common sense
+
+* big endian，little endian大端序，小端序
+    * Most Significant Bit / Least Significant Bit:二进制中最高/低值的比特，即影响最大/小的那一位
+    * big endian是指低地址存放最高有效字节（MSB），而 little endian则是低地址存放最低有效字节（LSB）
 
 
 # GPU
@@ -71,16 +85,187 @@
 
 # ARM
 
+## design
+
+* FCSE(fast context switch extension)
+    * 原理：FCSE 通过修改系统中不同进程的虚拟地址，避免在进行进程间切换时造成的虚拟地址到物理地址的重映射，从而提高系统的性能
+    * 原先：通常情况下，如果两个进程占用的虚拟地址空间有重叠，系统在这两个进程之间进行切换时，必须进行虚拟地址到物理地址的重映射。而虚拟地址到物理地址的重映射涉及到**重建MMU中的页表**，而且**cache及TLB中的内容都必须使无效**（通过设置协处理器寄存器的相关位）。这些操作将带类巨大的系统开销，一方面重建MMU和使无效cache及TLB的内容需要很大的开销，另一方面重建cache和TLB内容也需要很大的开销。
+    * 改进：快速上下文切换机构将个进程的虚拟地址空间变换成不同的虚拟地址空间。这样在进行进程间切换时就不需要进行虚拟地址到物理地址的重映射。
+
 ## cortex-a series
 
 ### performance
 
-* performance of for cortex v7
+* [performance of all arm cortex series](https://en.wikipedia.org/wiki/List_of_ARM_microarchitectures) (也可参考[ARM Cortex-A](https://en.wikipedia.org/wiki/ARM_Cortex-A))
+    * 指标：
+        * DMIPS:Dhrystone Million Instructions executed Per Second ：主要用于测整数计算能力。D是Dhrystone的缩写，他表示了在Dhrystone这样一种测试方法下的MIPS
+        * MFLOPS:Million Floating-point Operations per Second：主要用于测浮点计算能力。
+    * 数据
+
+        |type|arch|perf(DMIPS/MHz)|
+        |---|---|---|
+        |Cortex A5|v7|1.57|
+        |Cortex A7|v7|1.9|
+        |Cortex A8|v7|2.0|
+        |Cortex A9|v7|2.5|
+        |Cortex A12|v7|3.0|
+        |Cortex A15|v7|>3.5|
+        |Cortex A17|v7|2.8|
+        |Cortex A35|v8|1.78|
+        |Cortex A53|v8|2.3|
+        |Cortex A57|v8|4.1|
+        |Cortex A72|v8|4.7|
+        |Cortex A73|v8|4.9|
+
+* performance of old cortex v7
 
     ![cortex-a-perf.jpg](./data/soc/cortex-a-perf.jpg)
     * refer: [Floating-point performance of ARM cores and their efficiency in classical molecular dynamics](https://iopscience.iop.org/article/10.1088/1742-6596/681/1/012049/pdf)
-* performance of computing int8/float multiply operation (by software)
+* performance of cortex-M(computing int8/float multiply operation)
     * cortex m3: cycles for each FLO in compiler supported platform(cortex M3, compile implement the operation) (**The integer multiplication took 7 cycles**, of which **4 cycles** were used to **load** operands and **2 cycles** - to **store** the result. The **multiplication itself is 1 cycle**, in accordance with 'hardware single-cycle multiply' promise of Cortex-M3.**The float multiplication took 47 cycles** with the **multiplication itself taking 41 cycles**. Keep in mind that the float multiplication execution time depends on the values of operands. refer: [Floating point performance on Cortex M3](https://community.arm.com/developer/tools-software/tools/f/keil-forum/28234/floating-point-performance-on-cortex-m3)
+
+## ABI
+
+### 标准
+* APCS([arm procedure call standard](https://www.cl.cam.ac.uk/~fms27/teaching/2001-02/arm-project/02-sort/apcs.txt))
+
+### 应用范式
+
+* [stack operations for nested subroutines](http://infocenter.arm.com/help/topic/com.arm.doc.dui0473j/dom1359731152874.html)
+    * lr和工作寄存器均要保存
+    ```asm
+    subroutine PUSH {r5-r7,lr} ; Push work registers and lr
+    ; code
+    BL somewhere_else
+    ; code
+    POP {r5-r7,pc} ; Pop work registers and pc
+    ```
+
+## instruction
+
+### 指令集与内嵌汇编
+
+* thumb & arm指令集
+    * thumb指令集可以认为是16位精简版的arm指令集，提供通用功能，但在必要的情况下依然需要使用arm指令集完成操作，比如异常等
+    * 设置gcc编译指令集：**默认编译为arm指令集**，在android中，给gcc传入了-mthumb参数后，尽可能**编译成thumb指令集压缩空间**
+    * 参考：[Differences between Thumb and ARM instruction sets](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0068b/ch02s02s09.html)
+* inline assembly
+    * 通用格式
+    
+        ```asm
+        "cmd1\n"
+        "cmd2\n"
+        ...
+        : [output]  "format" (c var)
+        : [input] "format" (c var)
+        : extra constraints
+        ```
+
+    * 示例
+        ```asm
+        asm volatile(
+        "mov r0, %1\n"
+        "mov r1, %2\n"
+        "mov r2, %3\n"
+        "mov r3, %4\n"
+        "ldr r4, =syscallX\n"
+        "mov %0, r4\n"
+        "bl syscallX\n"
+        : "=r" (cpy)
+        : "r" (num), "r" (dir), "r" (mode), "r"(ptr)
+        : "r0", "r1", "r2", "r3", "r4", "memory"
+        );
+        ```
+    * 其中
+        * a) `memory` is a valid keyword too. It tells the compiler that the assembler instruction may change memory locations.This forces the compiler to store all cached values before and reload them after executing the assembler instructions.
+        * b) `[output]  "format" (c var)` 格式可以简化为 `"format (c var)"`， 同时在assembly中用`%`数字代表参数，从0开始，比如`%0`代表第一个输出
+        * c) 在output和Input格式中 `"="` Write-only operand, usually used for all output operands `"+"` Read-write operand, must be listed as an output operand
+        * d)常用的无用代码比如 mov r0, r0
+    * 参考：[ARM GCC Inline Assembler Cookbook](http://www.ethernut.de/en/documents/arm-inline-asm.html)，[Assembler Instructions with C Expression Operands](https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html#Volatile)
+
+### 基本指令
+
+* **跳转**([B, BL, BX, BLX, and BXJ](https://developer.arm.com/docs/dui0489/h/arm-and-thumb-instructions/b-bl-bx-blx-and-bxj)])
+    * `bx {<cond>} <Rm>`
+        * \<cond\>为指令执行的条件码。当\<cond\>忽略时指令为无条件执行。
+        * \<Rm\>该寄存器中为跳转的目标地址。当\<Rm\>寄存器的bit[0]为0时，目标地址处的指令为ARM指令；当\<Rm\>寄存器的bit[0]为1时，目标地址处的指令为Thumb指令。
+    * `bl {cond} label`
+        * 其作用是，除了b指令跳转到label之外，在跳转之前，先把下一条指令地址存到lr寄存器中，以方便跳转到那边执行完毕后，将lr再赋值给pc，以实现函数返回，继续执行下面的指令的效果。
+
+            ```
+                bl    cpu_init_crit
+            ......
+            cpu_init_crit:
+            ......
+                mov    pc, lr
+            ```
+            
+            对应c代码为
+
+            ```c
+            cpu_init_crit();
+            ......
+            void cpu_init_crit(void)
+            {
+                ......
+            }
+            ```
+    * 核心差异
+        * The BL and BLX instructions copy the address of the next instruction into lr (r14, the link register).
+    	* The BX and BLX instructions can change the processor state from ARM to Thumb, or from Thumb to ARM.
+* **读写**(mov & ldr & str & stm & ldm)
+    * ldr指令数据从内存中某处读取到寄存器中，ldr伪指令可以在立即数前加上=，以表示把一个地址写到某寄存器中
+    * `mov`只能在寄存器之间移动数据，或者把立即数移动到寄存器中
+    * `ldr`伪指令和mov是比较相似的，只是mov指令限制了立即数的长度为8位
+    * `str`指令用从源寄存器中将一个32位的字数据传送到存储器中
+        * `str {cond}  src_reg, <ddr_addr>`
+        * `str r0, [r1], #8`；将R0中的字数据写入以R1为地址的存储器中，并将新地址R1＋8写入R1
+        * `str r0, [r1, #8]`；将R0中的字数据写入以R1＋8为地址的存储器中
+        * `str r1, [r0]`；将r1寄存器的值，传送到地址值为r0的（存储器）内存中
+    * `ldm`是`ldr`的扩展版，用于load，这个指令运行的方向和LDR是不一样的，是从左到右运行的，该指令是将内存中堆栈内的数据，批量的赋值给寄存器。
+    * `stm`是`str`的扩展版，用于store，区别于STR，是将堆栈指针写在左边，而把寄存器组写在右边。
+* **控制**([fp & sp & lr & pc](https://stackoverflow.com/questions/15752188/arm-link-register-and-frame-pointer))
+    * The pc and lr are related. One is "**where you are**" and the other is "**where you were**".
+    * sp is where the **stack is** and the fp is where the **stack was**
+    * a stack frame layout
+        * fp[-0] saved pc, where we stored this frame.
+        * fp[-1] saved lr, the return address for this function.
+        * fp[-2] previous sp, before this function eats stack.
+        * fp[-3] previous fp, the last stack frame.
+* msr/mrs
+    * CPSR/SPSR寄存器保存了用户模式和系统模式等状态信息，对CPSR，SPSR寄存器进行操作不能使用mov，ldr等通用指令，只能使用特权指令msr和mrs
+    * MRS（Move to Register from State register）
+    * MSR（Move to State register from register）
+    * 小部分位段可以在user space更改，所有位段都能在kernel space更改，指令集mode段只能在kernel space更改
+* swi/svc
+    * swi和svc均为系统调用
+    * SWI and SVC are same thing, it is just a name change. Previously, the SVC instruction was called SWI, Software Interrupt.
+* dmb/dsb/isb
+    * 存在价值
+        * 解决arm做指令乱序时产生的load/store乱序导致的影响；指令乱序不会对存在数据依赖的代码进行乱序（但有些数据依赖，比如并行或者driver应用，是无法通过代码字面情形分析出来的）
+    * 受众
+        * 应用程序开发人员,无须过多担心它，使用的任何并发框架都可以为您解决它；
+        * 设备驱动程序开发人员,那么您将很容易找到示例-只要您的代码在执行某些其他访问之前依赖于先前的访问产生了影响(清除了中断源,编写了DMA描述符), (重新启用中断,启动DMA事务)；
+        * 开发并发框架(或调试其中一个框架),则可能需要多阅读一些有关该主题的信息
+    * 区别
+        * DMB：数据存储器隔离。DMB 指令保证： 仅当所有在它前面的存储器访问操作都执行完毕后，才提交(commit)在它后面的存储器访问操作。
+        * DSB:数据同步隔离。比 DMB 严格： 仅当所有在它前面的存储器访问操作都执行完毕后，才执行在它后面的指令
+        * ISB：指令同步隔离。最严格：它会清洗流水线，以保证所有它前面的指令都执行完毕之后，才执行它后面的指令。
+    * 其他
+        * compiler barrier
+            * volatile：让编译器生成的代码，每次都从内存重新读取变量的值，而不是用寄存器中暂存的值。
+            * linux barrier()：`#define barrier() __asm__ __volatile__("": : :"memory")`
+        * memory barrier
+            * dmb/dsb/isb in arm
+    * 参考
+        * [对优化说不 - Linux中的Barrier](https://zhuanlan.zhihu.com/p/96001570)
+        * [Memory access ordering - an introduction](https://community.arm.com/developer/ip-products/processors/b/processors-ip-blog/posts/memory-access-ordering---an-introduction)
+        * [Memory access ordering part 2: Barriers and the Linux kernel](https://community.arm.com/developer/ip-products/processors/b/processors-ip-blog/posts/memory-access-ordering-part-2---barriers-and-the-linux-kernel)
+        * [Memory access ordering part 3: Memory access ordering in the Arm Architecture](https://community.arm.com/developer/ip-products/processors/b/processors-ip-blog/posts/memory-access-ordering-part-3---memory-access-ordering-in-the-arm-architecture)
+        * [Memory Barriers: a Hardware View for Software Hackers](http://www.rdrop.com/users/paulmck/scalability/paper/whymb.2010.07.23a.pdf)
+* teq
+    * test equal，如果两者相等将，CPSR状态寄存器的EQ status置位，当遇到bne等指令时，如果equal，则执行，否则放弃。
+
 
 # ASIC(for AI)
 
