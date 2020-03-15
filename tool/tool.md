@@ -19,3 +19,5 @@
         * markdown viewer
         * markdown reader
         * mathjax plugin for github
+    * linux tools
+        * meld (like beyondcompare)

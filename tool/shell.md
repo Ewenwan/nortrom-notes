@@ -7,7 +7,7 @@
 
 * [Shell编程基础](http://wiki.ubuntu.org.cn/Shell%E7%BC%96%E7%A8%8B%E5%9F%BA%E7%A1%80)
 
-# linux基本概念
+# linux使用基本概念
 
 ## 文件系统
 
@@ -50,6 +50,22 @@
 
 # 命令
 
+## 包管理
+
+* list all the package that installed
+    * `sudo dpkg -l | more`
+* [list the data and version installed](http://askubuntu.com/questions/389715/how-to-list-installed-package-and-its-details-on-ubuntu)
+    * `cat /var/log/dpkg.log | grep "install"`
+* list where the package installed
+    * `dpkg -L packagename`
+* list the runnable binary's location and which version it used location "which binary"
+    * `dpkg --listfiles packagename`
+* how many that kind of binary
+    * `whereis binary`
+* how to uninstall the installed package
+    * `dpkg -r packagename`
+
+
 ## 环境和常用
 
 * \$\# \$\@ \$\*
@@ -86,9 +102,11 @@
 
 * ``who -r``
     * 查看当前的Linux服务器的运行级别
-
 * ``route -n`` & ``netstat -nr``
     * 查看默认网关。除了默认的网关信息，这两个命令还可以显示当前的路由表。
+* `scp`
+    * scp是linux系统下基于ssh登陆进行安全的远程文件拷贝命令，适用于本地到服务器的拷贝，或者服务器之间的拷贝，且可以很好的解决权限问题。
+    * e.g.: `scp -r ~/.ssh xj05@10.125.12.180:~/  `
 
 ## 系统
 

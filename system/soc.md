@@ -213,7 +213,9 @@
     * 核心差异
         * The BL and BLX instructions copy the address of the next instruction into lr (r14, the link register).
     	* The BX and BLX instructions can change the processor state from ARM to Thumb, or from Thumb to ARM.
-* **读写**(mov & ldr & str & stm & ldm)
+<span id="ldr-str"></span>
+
+* **读写**(mov & ldr & str & stm & ldm & strex & ldrex)
     * ldr指令数据从内存中某处读取到寄存器中，ldr伪指令可以在立即数前加上=，以表示把一个地址写到某寄存器中
     * `mov`只能在寄存器之间移动数据，或者把立即数移动到寄存器中
     * `ldr`伪指令和mov是比较相似的，只是mov指令限制了立即数的长度为8位
@@ -224,6 +226,10 @@
         * `str r1, [r0]`；将r1寄存器的值，传送到地址值为r0的（存储器）内存中
     * `ldm`是`ldr`的扩展版，用于load，这个指令运行的方向和LDR是不一样的，是从左到右运行的，该指令是将内存中堆栈内的数据，批量的赋值给寄存器。
     * `stm`是`str`的扩展版，用于store，区别于STR，是将堆栈指针写在左边，而把寄存器组写在右边。
+    * 独占访问指令：
+        * `ldrex`：`LDREX Rx, [Ry]`读取寄存器Ry指向的4字节内存值，将其保存到Rx寄存器中，同时标记对Ry指向内存区域的独占访问。
+        * `strex`：`STREX Rx, Ry, [Rz]`如果执行这条指令的时候发现已经被标记为独占访问了，则将寄存器Ry中的值更新到寄存器Rz指向的内存，并将寄存器Rx设置成0。指令执行成功后，会将独占访问标记位清除。而如果执行这条指令的时候发现没有设置独占标记，则不会更新内存，且将寄存器Rx的值设置成1。一旦某条STREX指令执行成功后，以后再对同一段内存尝试使用STREX指令更新的时候，会发现独占标记已经被清空了，就不能再更新了，从而实现独占访问的机制。
+        * 参考：[ARM平台下独占访问指令LDREX和STREX的原理与使用详解](https://blog.csdn.net/adaptiver/article/details/72392825)；[arm exclusive access](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dht0008a/CJAGCFAF.html&_ga=2.172681764.640980534.1584281365-997854972.1583052689)；[基于strex/ldrex的pthread实现](./linux.md#mutex-syscall)
 * **控制**([fp & sp & lr & pc](https://stackoverflow.com/questions/15752188/arm-link-register-and-frame-pointer))
     * The pc and lr are related. One is "**where you are**" and the other is "**where you were**".
     * sp is where the **stack is** and the fp is where the **stack was**
