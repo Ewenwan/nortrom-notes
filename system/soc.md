@@ -126,8 +126,14 @@
 
 ## ABI
 
+<span id="arm-abi"></span>
+
 ### 标准
 * APCS([arm procedure call standard](https://www.cl.cam.ac.uk/~fms27/teaching/2001-02/arm-project/02-sort/apcs.txt))
+* [ARM 架构参考手册](https://www.scss.tcd.ie/~waldroj/3d1/arm_arm.pdf)
+* [ARM 架构的过程调用标准](https://static.docs.arm.com/ihi0042/i/aapcs32.pdf?_ga=2.46926119.1229532213.1584787764-997854972.1583052689)(Procedure Call Standard for the Arm Architecture)
+* [ARM ELF 文件格式](http://infocenter.arm.com/help/topic/com.arm.doc.dui0101a/DUI0101A_Elf.pdf)
+* [针对 ARM 体系结构的应用程序二进制接口 (ABI)](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.subset.swdev.abi/index.html)
 
 ### 应用范式
 

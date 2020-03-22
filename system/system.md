@@ -25,15 +25,25 @@
 
 * evolution
     * [evolution of storage and computing](http://pages.experts-exchange.com/processing-power-compared/) -- [localpage](./data/system/Processing%20Power%20Compared.html)
-* storage
-  * latency of storage in general
-      * [Latency Comparison Numbers (~2012)](https://gist.github.com/jboner/2841832)
+* storage and speed
+    * latency of storage in general
+        * [Latency Comparison Numbers (~2012)](https://gist.github.com/jboner/2841832)
 
-      ![system_latency.PNG](./data/system/system_latency.PNG)
+        ![system_latency.PNG](./data/system/system_latency.PNG)
 
-  * latency of emmc storage
+    * latency of emmc storage
 
-      ![latency of storage](./data/latency_of_each_storage.jpg)
+        ![latency of storage](./data/latency_of_each_storage.jpg)
+
+    * HDD v.s. SSD 参考:[UserBenchmark](https://ssd.userbenchmark.com/)
+        
+||HDD|SSD|
+|---|---|---|
+|series write|140MB/s|2100MB/s|
+|series read|160MB/s|2400MB/s|
+|random 4k write|1.5MB/s|150MB/s|
+|random 4k read|0.8MB/s|70MB/s|
+|latency|10ms|10us|
 
   * 参考文档
     * [3D XPoint、XL-Flash、MRAM：未来鹿死谁手？](https://zhuanlan.zhihu.com/p/78216825)

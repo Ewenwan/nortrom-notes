@@ -29,6 +29,16 @@
         * atime(Access time)是在读取文件或者执行文件时更改的（我们只cd进入一个目录然后cd ..不会引起atime的改变，但ls一下就不同了）。
         * mtime(Modified time)是在目录中有文件的新建、删除才会改变（如果只是改变文件内容不会引起mtime的改变。
         * ctime(Change time)基本同文件的ctime，其体现的是inode的change time。
+<span id="specialperm"></span>
+
+* 特殊权限
+    * sticky bit(1)
+        * sticky bit只对目录有效，使目录下的文件，只有文件拥有者才能删除（如果他不属于owner，仅属于group或者other，就算他有w权限，也不能删除文件）。
+    * SGID(2)
+        *  加上SGID的文件，表示运行这个程序时，是临时以这个文件的拥有组的身份运行的；加上SGID的文件夹，表示在这个目录下创建的文件属于目录所有的组，而不是创建人所在的组，在这个目录下创建的目录继承本目录的SGID。
+    * SUID(4)
+        *  SUID与SGID是一样的，惟一不同的是，运行时是以这个文件的拥有者身份来运行。(比如对于su命令，所有者是root，但如果配置该权限后，其他用户也可以获得root权限)
+     * 参考：[setuid](../system/linux.md#setuid)，[sudo-su](./shell.md#sudo&su)
 
 ## 设备
 
@@ -98,6 +108,17 @@
 
     * Linux 中的 shell 有很多类型，其中最常用的几种是: Bourne shell (sh)、C shell (csh) 和 Korn shell (ksh), 各有优缺点。**Bourne shell 是 UNIX 最初使用的 shell**，并且在每种 UNIX 上都可以使用, 在 shell 编程方面相当优秀，但在处理与用户的交互方面做得不如其他几种shell。Linux 操作系统缺省的 shell 是Bourne Again shell，它是 Bourne shell 的扩展，简称 **Bash，与 Bourne shell 完全向后兼容，并且在Bourne shell 的基础上增加、增强了很多特性**。Bash放在/bin/bash中，它有许多特色，可以提供如命令补全、命令编辑和命令历史表等功能，它还包含了很多 C shell 和 Korn shell 中的优点，有灵活和强大的编程接口，同时又有很友好的用户界面。GNU/Linux 操作系统中的 /bin/sh 本是 bash (Bourne-Again Shell) 的符号链接，但鉴于 bash 过于复杂，**有人把 ash 从 NetBSD 移植到 Linux 并更名为 dash (Debian Almquist Shell)，并建议将 /bin/sh 指向它**，以获得更快的脚本执行速度。Dash Shell 比 Bash Shell 小的多，符合POSIX标准。
 
+## 系统
+
+* `rss vss pss uss` & `procrank`
+	* VSS- Virtual Set Size 虚拟耗用内存（包含共享库占用的内存）
+	* RSS- Resident Set Size 实际使用物理内存（包含共享库占用的内存）
+	* PSS- Proportional Set Size 实际使用的物理内存（比例分配共享库占用的内存）
+	* USS- Unique Set Size 进程独自占用的物理内存（不包含共享库占用的内存）
+	* 一般来说内存占用大小有如下规律：VSS >= RSS >= PSS >= USS
+
+
+
 ## 网络
 
 * ``who -r``
@@ -107,8 +128,41 @@
 * `scp`
     * scp是linux系统下基于ssh登陆进行安全的远程文件拷贝命令，适用于本地到服务器的拷贝，或者服务器之间的拷贝，且可以很好的解决权限问题。
     * e.g.: `scp -r ~/.ssh xj05@10.125.12.180:~/  `
+* `route`
+    * 添加到主机的路由
+        * `route add -host 192.168.1.2 dev eth0`
+        * `route add -host 10.20.30.148 gw 10.20.30.40`
+    * 添加到网络的路由
+        * `route add -net 10.20.30.40 netmask 255.255.255.248 eth0` 添加10.20.30.40的网络
+        * `route add -net 10.20.30.48 netmask 255.255.255.248 gw 10.20.30.41` 添加10.20.30.48的网络
+        * `route add -net 192.168.1.0/24 eth1`
+    * 添加默认路由
+        * `route add default gw 192.168.1.1`
+    * 删除路由
+        * `route del -host 192.168.1.2 dev eth0:0`
+        * `route del -host 10.20.30.148 gw 10.20.30.40`
+        * `route del -net 10.20.30.40 netmask 255.255.255.248 eth0`
+        * `route del -net 10.20.30.48 netmask 255.255.255.248 gw 10.20.30.41`
+        * `route del -net 192.168.1.0/24 eth1`
+        * `route del default gw 192.168.1.1`
 
-## 系统
+## 权限
+
+<span id="sudo-su"></span>
+
+* `sudo` & `su`
+    * sudo特点
+        * 流程：临时授予权限，输入当前用户密码，执行完命令后回退到当前用户状态。是否可执行sudo需通过/etc/sudoers配置
+        * 文件：`---s--x--x 2 root root 208808 Jun  3  2011 /usr/bin/sudo`
+        * 源码：通过setuid获取root权限，通过execve执行命令，再通过exit重置权限。
+    * su特点
+        * 流程：直接授予权限，输入root账户密码。
+        * 源码：通过setuid获取root权限，通过fork/execve启动root bash
+    * 参考
+        * [sudo源码分析（一）](https://blog.csdn.net/hekailing/article/details/48297961)
+        * [How do the internals of sudo work?](https://unix.stackexchange.com/questions/80344/how-do-the-internals-of-sudo-work)
+        * [Linux下su命令的实现](https://blog.csdn.net/Learning_zhang/article/details/53349681)
+        * [setuid](../system/linux.md#setuid)，[特殊权限](#specialperm)
 
 ## 文本
 
