@@ -235,7 +235,7 @@
     * 独占访问指令：
         * `ldrex`：`LDREX Rx, [Ry]`读取寄存器Ry指向的4字节内存值，将其保存到Rx寄存器中，同时标记对Ry指向内存区域的独占访问。
         * `strex`：`STREX Rx, Ry, [Rz]`如果执行这条指令的时候发现已经被标记为独占访问了，则将寄存器Ry中的值更新到寄存器Rz指向的内存，并将寄存器Rx设置成0。指令执行成功后，会将独占访问标记位清除。而如果执行这条指令的时候发现没有设置独占标记，则不会更新内存，且将寄存器Rx的值设置成1。一旦某条STREX指令执行成功后，以后再对同一段内存尝试使用STREX指令更新的时候，会发现独占标记已经被清空了，就不能再更新了，从而实现独占访问的机制。
-        * 参考：[ARM平台下独占访问指令LDREX和STREX的原理与使用详解](https://blog.csdn.net/adaptiver/article/details/72392825)；[arm exclusive access](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dht0008a/CJAGCFAF.html&_ga=2.172681764.640980534.1584281365-997854972.1583052689)；[基于strex/ldrex的pthread实现](./linux.md#mutex-syscall)
+        * 参考：[ARM平台下独占访问指令LDREX和STREX的原理与使用详解](https://blog.csdn.net/adaptiver/article/details/72392825)；[arm exclusive access](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dht0008a/CJAGCFAF.html&_ga=2.172681764.640980534.1584281365-997854972.1583052689)；[基于strex/ldrex的pthread实现](./linux_syscall.md#mutex-syscall)
 * **控制**([fp & sp & lr & pc](https://stackoverflow.com/questions/15752188/arm-link-register-and-frame-pointer))
     * The pc and lr are related. One is "**where you are**" and the other is "**where you were**".
     * sp is where the **stack is** and the fp is where the **stack was**

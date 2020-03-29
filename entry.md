@@ -26,6 +26,7 @@
         * [soc](./system/soc.md)
     * [programming](./programming/prog.md)
         * [java](./programming/java.md)
+        * [cpp](./programming/cpp.md)
         * [algorithm](./programming/algorithm.md)
         * [compiler](./programming/compiler.md)
     * [math](./math/math.md)

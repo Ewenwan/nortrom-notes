@@ -38,7 +38,7 @@
         *  加上SGID的文件，表示运行这个程序时，是临时以这个文件的拥有组的身份运行的；加上SGID的文件夹，表示在这个目录下创建的文件属于目录所有的组，而不是创建人所在的组，在这个目录下创建的目录继承本目录的SGID。
     * SUID(4)
         *  SUID与SGID是一样的，惟一不同的是，运行时是以这个文件的拥有者身份来运行。(比如对于su命令，所有者是root，但如果配置该权限后，其他用户也可以获得root权限)
-     * 参考：[setuid](../system/linux.md#setuid)，[sudo-su](./shell.md#sudo&su)
+     * 参考：[setuid](../system/linux_syscall.md#setuid)，[sudo-su](./shell.md#sudo&su)
 
 ## 设备
 
@@ -95,8 +95,8 @@
     * ``zip -r yasuo.zip abc.txt dir1``：把一个文件abc.txt和一个目录dir1压缩成为yasuo.zip
     * ``unzip yasuo.zip``
 * 硬链接和符号链接
-    * 简单的说:硬连接记录的是目标的inode,符号连接记录的是目标的path。
-    * 软连接就像是快捷方式,而硬连接就像是备份!符号连接可以做跨分区的 link；而 硬连接由于 inode 的缘故，只能在本分区中做 link.所以,符号连接的使用频率要高的多。
+    * 简单的说:硬连接记录的是目标的inode(也就是说硬链接单独创建一个指向目标文件的dentry),符号连接记录的是目标的path（也就是说创建一个inode，里面的内容是dentry）。
+    * 软连接就像是快捷方式,而硬连接就像是备份(所有dentry被全部删掉才能删除对应的inode)!符号连接可以做跨分区的 link；而 硬连接由于 inode 的缘故，只能在本分区中做 link.所以,符号连接的使用频率要高的多。
 * bash(/bin/bash) & dash(/bin/sh)
     * dash 比 bash 更轻，更快。但 bash 却更常用。
     * Ubuntu的 shell 默认安装的是 dash，而不是 bash。
@@ -116,6 +116,7 @@
 	* PSS- Proportional Set Size 实际使用的物理内存（比例分配共享库占用的内存）
 	* USS- Unique Set Size 进程独自占用的物理内存（不包含共享库占用的内存）
 	* 一般来说内存占用大小有如下规律：VSS >= RSS >= PSS >= USS
+	* 参考：[使用 smem 可视化显示Linux内存使用情况](https://linux.cn/article-4492-1.html)
 
 
 
@@ -162,7 +163,7 @@
         * [sudo源码分析（一）](https://blog.csdn.net/hekailing/article/details/48297961)
         * [How do the internals of sudo work?](https://unix.stackexchange.com/questions/80344/how-do-the-internals-of-sudo-work)
         * [Linux下su命令的实现](https://blog.csdn.net/Learning_zhang/article/details/53349681)
-        * [setuid](../system/linux.md#setuid)，[特殊权限](#specialperm)
+        * [setuid](../system/linux_syscall.md#setuid)，[特殊权限](#specialperm)
 
 ## 文本
 
