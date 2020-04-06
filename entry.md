@@ -37,6 +37,7 @@
         * [makefile](./tool/makefile.md)
         * [shell](./tool/shell.md)
         * [others](./tool/others.md)
+    * [english](./language/english.md)
 * 处理堆栈
     * [统计学习那些事](https://cosx.org/2011/12/stories-about-statistical-learning/)
     * [那些年，我们一起追的 EB](https://cosx.org/2012/05/chase-after-eb/)

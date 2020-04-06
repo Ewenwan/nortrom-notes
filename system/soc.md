@@ -85,6 +85,13 @@
 
 # ARM
 
+## performance
+
+### settings influence perf
+
+* FCSE(fast context switch extension)
+* 大内存页支持(HUGETLB 透明大页)
+
 ## design
 
 * FCSE(fast context switch extension)

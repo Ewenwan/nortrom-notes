@@ -179,3 +179,11 @@
     9. **a daily list & a week list & a long tern list(before sleep) & quitting time & start with most difficult task**
     10. not fool yourself and you are the easiest man to fool (bring together two hemispheres to work, right hemisphere for global view)
     11. **explain to others help build your own understanding**
+
+# 如何提问
+
+* [学会提问](./data/学会提问.xmind)
+
+# 如何自控
+
+* [自控力](./data/自控力.xmind)

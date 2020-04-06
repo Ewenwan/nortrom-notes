@@ -8,6 +8,14 @@
     * symmetric 对称的
     * antisymmetric 反对称的 
     * transitive 传递的
+    * asymptotic 渐近线的
+    * logarithmic 对数的
+    * geometric 几何学图形的
+    * quadratic 二次的
+    * dividend 被除数
+    * divisor 除数
+    * numerator 分子
+    * denominator 分母
 * 离散数学
     * connectivity relation R ∗ 连通性关系
     * the zero–one matrix 0-1矩阵
