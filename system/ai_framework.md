@@ -5,6 +5,16 @@
 
 # AI嵌入式框架
 
+## Qeexo
+
+* 使用场景
+    * cortex-M等超低端设备中
+    * 应用产品：哈利波特玩具魔杖，手势识别，异常检测（低功耗，用于唤醒其他设备）
+* 参考
+    * [忘了智能手机吧，Edge AI搭配Cortex M系列才是王道](https://www.jiqizhixin.com/articles/2020-02-25)
+
+# AI通用框架
+
 ## caffe
 
 * concept
@@ -33,6 +43,47 @@
             * poly: 　　  学习率进行多项式误差, 返回 base_lr (1 - iter/max_iter) ^ (power)- sigmoid:　学习率进行sigmod衰减，返回 base_lr ( 1/(1 + exp(-gamma \* (iter - stepsize))))
     * display
         * show loss/lr in console in each 'display' iterations
+* layer
+    * power
+        * 输入1 featuremap，输出1 featuremap
+        * eltwise级操作
+        * 计算：$(shift + scale * x)^{power}$
+    * scale
+        * 输入2 featuremap，输出1 featuremap
+        * 输入1：$n*c*h*w$，输入2：$n*c*1*1$
+        * 计算：输入2h&w维度平铺展开，与输入1 eltwise prod
+    * permute
+        * 输入1 featuremap，输出1 featuremap
+        * 交换caffe_blob中数据的维度，下面参数将$n*c*h*w$-->$c*n*h*w$
+        
+        ```
+        permute_param {
+            order: 1
+            order: 0
+            order: 2
+            order: 3
+        }
+        ```
+    
+    * reshape
+        * 输入1 featuremap，输出1 featuremap
+        * 只改变输入数据的维度表示，内容不变
+        * dim的参数0：表示维度不变，x：表示将原来维度变化为x，-1：表示自动推算剩下维度
+        * 比如下面的参数将32x3x28x28变换为32x3x14x56
+
+        ```
+        shape {
+            dim: 0  # 32 --> 32
+            dim: 0  # 3  --> 3
+            dim: 14 # 28 --> 14
+            dim: -1 # deduce 28 --> 56
+        }
+        ```
+
+    * flatten
+        * 输入1 featuremap，输出1 featuremap
+        * 只改变输入数据的维度表示，内容不变，将数据拉成一维向量
+        * $n*c*h*w$-->$n*1*1*(chw)$
 
 
 # AI集群框架

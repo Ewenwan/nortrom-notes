@@ -89,6 +89,19 @@
 * **strace**：显示所有由用户空间程序发出的系统调用
 * 参考：[掌握 Linux 调试技术](https://www.ibm.com/developerworks/cn/linux/sdk/l-debug/index.html)
 
+### 内存泄漏
+
+* 查看内存泄漏方法
+    * `cat /proc/PID/smaps > befmeminf` 运行时保存内存信息
+    * `cat /proc/PID/smaps > aftmeminf` 结束前再次保存
+    * `diff befmeminf aftmeminf` 对比差异
+
+    ![memleak.PNG](./data/linux/memleak.PNG)
+    
+    * 参考：[How can I find a memory leak of a running process?](https://unix.stackexchange.com/questions/36450/how-can-i-find-a-memory-leak-of-a-running-process)
+* 分析内存泄漏
+    * `memprof` memprof works by pre-loading a library to override the C library’s memory allocation functions and does not require you to recompile your program.
+
 ### 日志
 
 * 日志系统

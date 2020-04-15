@@ -34,6 +34,21 @@
     * protected可以被继承，不可被访问；virtual属性不可改变，子类的虚函数可以不用申明virtual
     * 默认为private继承（c++多重继承中默认为private继承方式 ）
     * 派生类屏蔽基类同名函数，如要调用基类的，则需要使用作用域操作符
+* overload
+    * operator overloading
+        * subscripting [] operator
+            * 如何定义下标重载运算符
+            * `class-X &operator[](int i)`
+        * class member access operator
+            * 如何定义成员函数访问重载运算符
+            * `class-X* operator->() const` ，例如：
+            
+            ```c++
+            void f(Ptr p ) {
+                p->m = 10 ; // (p.operator->())->m = 10
+            }
+            ```
+            
 
 * 异常
     * 析构函数不能抛出异常
@@ -43,6 +58,11 @@
         * [C++的异常处理](https://blog.csdn.net/daheiantian/article/details/6530318)
 
 # STL
+
+## STL operation
+
+* assign a vector when init
+    * `std::vector<int> v { 34,23 };`
 
 ## STL behavior
 
