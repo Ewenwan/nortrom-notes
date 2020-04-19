@@ -3,6 +3,17 @@
 
 [system](./system.md)
 
+# history
+
+* glibc与linux libc
+    * 历史上有Linux libc基于glibc1.0版本的分支，用于适配linux系统，该分支一度包含libc.so.4 libc.so.5，但1997年后glibc升级至glibc.2.0后，优势极度明显，于是开发者切换至glibc2.0，为了保持名字的兼容性，glibc2.0也叫做libc.so.6
+	见 linux manpage libc(7)
+* Glibc与linux libc的license
+    * 基于GNU的libc与libstdc++原始license为LGPL，即允许被动态链接，但后续升级为了GPLv3 + section 7 of an exception
+    * GPLv2.x~3.x系列跟GPL license的语义保持一致，但包含漏洞，即仅针对发布软件，而对于云端软件和托管平台软件，由于软件没有发布，可以完全绕开GPL协议，于是诞生AGPL协议进行补充
+    * 基于GNU的libc与libstdc++现在均使用GPLv3协议，这导致**所有链接基础库的程序都必须遵循GPL协议，这显然是不可能的**。**规避的方式是增加了section 7 of an exception** 。该特例规定程序可包含libc和libstdc++编译时的特殊代码段，以及运行时链接这些库。具体请参见GCC RUNTIME LIBRARY EXCEPTION:
+        * When you use gcc to compile a program, gcc may combine portions of certain gcc header files and runtime libraries with the compiled program. The purpose of this exception is to allow compilation of non-GPL program to use, in this way the header files and runtime libraries covered by the exception.
+
 # memory-management
 
 * 现有内存管理框架

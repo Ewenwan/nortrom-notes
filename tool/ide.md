@@ -29,14 +29,33 @@
     * ctrl+alt+T 启动terminal
     * ctrl+left-arrow 光标移动到上一个单词的词首
     * ctrl+right-arrow 光标移动到下一个单词的词尾
-    * ctrl+d 删除光标位置出的一个字符
     * ctrl+w 删除光标位置的前一个单词
+    * ctrl+d 删除光标位置出的一个字符
 
+# visual studio
+
+* image watch工具
+    * 如何使用image watch插件
+    
+    ```
+    @mem(address, type, channels, width, height, stride)
+    @mem(myimg.data, UINT8, 1, 320, 240, 320)
+    ```
 
 # vscode
 
-* 同时编辑多行
+* 基本编辑
+    * Ctrl+PageUp/PageDown 回到上一个编辑处
+* 编辑多行
     * Alt+Shift 竖列选择
+    * Alt+up/down 某一行上下移动
+    * Ctrl + [和 Ctrl + ] 实现文本的向左移动或者向右移动；
+* 代码
+    * CTRL+Shift+O 查看当前文件中的函数列表
+    * Ctrl+P 查看当前文件中的符号
+    * Shift  +  Alt  + F     实现代码的对齐
+    * 首先用鼠标选中多行，然后先按Ctrl+k，再按下Ctrl+c  完成注释
+    * 首先用鼠标选中多行，然后先按Ctrl+k，再按下Ctrl+u  取消注释
 
 # git
 
@@ -73,9 +92,19 @@
     * `git reset --soft <commit>` 撤销到某次commit，但改动的代码依旧保留
 * reference
     * [Git 分支 - 分支的衍合](https://git-scm.com/book/zh/v1/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E8%A1%8D%E5%90%88)
+* 中文支持性
+    * git diff show code in utf-8 format, but if source code is encoded in euc-cn(GB2312) format
+    * git status支持中文
+        * `git config --global core.quotepath false`
+    * [修改编码](./shell.md#text-encoder)
+
 
 # vim
 
+* 编码
+    * `:set fileencoding` 查看编码
+    * `:set fileencoding=utf-8` 设置编码
+    * [修改编码](./shell.md#text-encoder)
 * autoident
     * turn off autoindent `:set paste`
     * turn on autoindent `:set nopaste`

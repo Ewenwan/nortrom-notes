@@ -3,6 +3,43 @@
 
 [linux](./linux.md)
 
+# 高速缓存
+
+* write through & write back 以及多核下的状态机
+    * write through: 直接写内存
+    * write back: 写cache，设置dirty
+    * write-back:write-back相对于write-through而言是一种更精炼的方法，采用write-back策略，CPU在改写了cache line后，并不是马上把其写回内存，而是将该cache line标志为dirty。只有当cache中发生一次cache miss，其他的数据要占用该cache line时，CPU才会把其写回内存。在实现write-back策略时，有一个重要的问题是需要被考虑到的，当多个处理器访问同一内存时，必须保证所有处理器所看到的内存内容是相同的，也就是一致性的问题。当一个cache line被一个处理器设置为dirty后，另一个处理器要访问同一内存，那么显然，该处理器真正需要的数据是前者的cache里的数据，而不是内存中还未更新的数据
+
+
+    ![cache_sts.png](./data/linux/cache_sts.png)
+
+    * 上图状态机对应的状态转移列表如下
+
+| 当前状态           | 事件           | 行为                                                                       | 下一个状态 |
+|----------------|--------------|--------------------------------------------------------------------------|-------|
+| I(Invalid)   | Local Read   | 如果其它Cache没有这份数据，本Cache从内存中取数据，Cache line状态变成E；                           | E/S   |
+|                |              | 如果其它Cache有这份数据，且状态为M，则将数据更新到内存，本Cache再从内存中取数据，2个Cache 的Cache line状态都变成S； |       |
+|                |              | 如果其它Cache有这份数据，且状态为S或者E，本Cache从内存中取数据，这些Cache 的Cache line状态都变成S          |       |
+|                | Local Write  | 从内存中取数据，在Cache中修改，状态变成M；                                                 | M     |
+|                |              | 如果其它Cache有这份数据，且状态为M，则要先将数据更新到内存；                                        |       |
+|                |              | 如果其它Cache有这份数据，则其它Cache的Cache line状态变成I                                  |       |
+|                | Remote Read  | 既然是Invalid，别的核的操作与它无关                                                    | I     |
+|                | Remote Write | 既然是Invalid，别的核的操作与它无关                                                    | I     |
+| E(Exclusive) | Local Read   | 从Cache中取数据，状态不变                                                          | E     |
+|                | Local Write  | 修改Cache中的数据，状态变成M                                                        | M     |
+|                | Remote Read  | 数据和其它核共用，状态变成了S                                                          | S     |
+|                | Remote Write | 数据被修改，本Cache line不能再使用，状态变成I                                             | I     |
+| S(Shared)    | Local Read   | 从Cache中取数据，状态不变                                                          | S     |
+|                | Local Write  | 修改Cache中的数据，状态变成M，                                                       | M     |
+|                |              | 其它核共享的Cache line状态变成I                                                    |       |
+|                | Remote Read  | 状态不变                                                                     | S     |
+|                | Remote Write | 数据被修改，本Cache line不能再使用，状态变成I                                             | I     |
+| M(Modified)  | Local Read   | 从Cache中取数据，状态不变                                                          | M     |
+|                | Local Write  | 修改Cache中的数据，状态不变                                                         | M     |
+|                | Remote Read  | 这行数据被写到内存中，使其它核能使用到最新的数据，状态变成S                                           | S     |
+|                | Remote Write | 这行数据被写到内存中，使其它核能使用到最新的数据，由于其它核会修改这行数据，状态变成I                              | I     |
+
+
 # 内存管理
 
 ## 数据结构

@@ -3,10 +3,12 @@
 
 [operating system](./operating_system.md)
 
-[linux_sched](./linux_sched.md)
-[linux_syscall](./linux_syscall.md)
-[linux_mem](./linux_mem.md)
-[linux_fs](./linux_fs.md)
+# 子主题
+
+* [linux_sched](./linux_sched.md)
+* [linux_syscall](./linux_syscall.md)
+* [linux_mem](./linux_mem.md)
+* [linux_fs](./linux_fs.md)
 
 # 发行版
 

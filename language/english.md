@@ -23,6 +23,17 @@
 * concatenation 连接
 * morph 变形，形态
 * lurk 潜伏，埋伏
+* ad hoc 特别的
+* pretain 属于
+* paradigm 范例，模范
+
+
+
+# short term
+
+* AKA: as far as 
+* YMMV: your mileage may vary
+* TLDR: too long didn't read
 
 # special symbol
 

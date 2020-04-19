@@ -92,12 +92,22 @@
 * FCSE(fast context switch extension)
 * 大内存页支持(HUGETLB 透明大页)
 
-## design
+### perf design
 
 * FCSE(fast context switch extension)
     * 原理：FCSE 通过修改系统中不同进程的虚拟地址，避免在进行进程间切换时造成的虚拟地址到物理地址的重映射，从而提高系统的性能
     * 原先：通常情况下，如果两个进程占用的虚拟地址空间有重叠，系统在这两个进程之间进行切换时，必须进行虚拟地址到物理地址的重映射。而虚拟地址到物理地址的重映射涉及到**重建MMU中的页表**，而且**cache及TLB中的内容都必须使无效**（通过设置协处理器寄存器的相关位）。这些操作将带类巨大的系统开销，一方面重建MMU和使无效cache及TLB的内容需要很大的开销，另一方面重建cache和TLB内容也需要很大的开销。
     * 改进：快速上下文切换机构将个进程的虚拟地址空间变换成不同的虚拟地址空间。这样在进行进程间切换时就不需要进行虚拟地址到物理地址的重映射。
+
+## all series
+
+* 各类型区分
+    * Cortex-A 高性能
+    * Cortex-R 实时性
+    * Cortext-M 简单应用的MCU 
+* cortex-a各型号
+
+    ![cortex-a-series.png](./data/soc/cortex-a-series.png)
 
 ## cortex-a series
 
@@ -153,6 +163,150 @@
     ; code
     POP {r5-r7,pc} ; Pop work registers and pc
     ```
+
+## arm compiler options
+
+### aarch32
+
+* `-march`
+    * This specifies the name of the target ARM architecture. GCC uses this name to determine what kind of instructions it can emit when generating assembly code. This option can be used in conjunction with or instead of the -mcpu= option.
+* `-mcpu`
+    * Equal to mtune
+* `-mtune`
+    * This option specifies the name of the target ARM processor for which GCC should tune the performance of the code.
+* `-mfloat-abi`
+    * softfloat - All float done in software.
+        * The soft option enables full software floating-point support. The compiler will not generate FPU instructions in soft mode. Instead, the compiler generates library calls to handle floating point operations. The compiler also generates prologue and epilogue functions to pass floating-point arguments (float, double) into integer registers (one for float, two fordouble`). **When using the soft option, the -mfpu flag is ignored.**
+    * softfp - **Float in hardware** values passed **on the stack** / int registers. ABI compatible with softfloat.
+        * The softfp option is a hybrid between hard and soft. The compiler is allowed to generate hardware floating-point instructions, but it still uses the soft-float ABI. Like with soft, the compiler generates functions to pass floating-point arguments to integer registers. Depending on the chosen FPU (-mfpu), the compiler can choose when to use emulated or hardware floating-point instructions.
+        * Since both soft and softfp use the same soft-float ABI, code built with either option can be linked together. However, when copying data from integer to floating-point registers, **a pipeline stall is incurred for every copy**. This additional overhead can **impact the performance** of your application, since **data is being copied back-and-forth from the FPU registers** when using floating-point arguments.
+    * hardfp - **Float done in hardware** values passed on **fpu registers**. ABI incompatible with other two.
+        * The hard option enables full hardware floating-point support. The compiler generates floating-point instructions and uses the floating-point ABI. Floating-point function arguments are passed directly into FPU registers. Since there are no function prologue or epilogue requirements, no pipeline stalls are incurred with floating-point arguments. The hard float option will provide you with the highest performance, but does limit your compiled binary to the selected FPU. **When using the hard option, you must define an FPU using -mfpu**.
+* `-mfpu`
+    * This specifies what floating-point hardware (or hardware emulation) is available on the target.
+    * The -mfpu option overrides the default FPU option implied by the target architecture.
+	* The -mfpu option is **ignored with AArch64 targets**, for example aarch64-arm-none-eabi. Use the -mcpu option to override the default FPU for aarch64-arm-none-eabi targets. For example, to prevent the use of floating-point instructions or floating-point registers for the aarch64-arm-none-eabi target use the -mcpu=name+nofp+nosimd option. Subsequent use of floating-point data types in this mode is unsupported.
+	In Armv7, the Advanced SIMD extension was called the Arm NEON™ Advanced SIMD extension.
+    * There are **no software floating-point libraries for AArch64 targets**. When linking for AArch64 targets, armlink uses AArch64 libraries that contain floating-point and Advanced SIMD instructions and registers. This applies even if you compile the source with `-mcpu=<name>+nofp+nosimd` to prevent the compiler from using floating-point and Advanced SIMD instructions and registers. Therefore, there is no guarantee that the linked image for AArch64 targets is entirely free of floating-point and Advanced SIMD instructions and registers.
+    * mfpu指定了需要使用的硬件float模块，因此该选项只有在-mfloat-abi=hard时才成立。注：在开启-funsafe-math-optimization之后，-fpmode=neon相关的才成立，因为它并不完全按照IEEE-754的约束进行计算
+    * including:
+        * none
+            * Prevents the compiler from using hardware-based floating-point functions. If the compiler encounters floating-point types in the source code, it will use software-based floating-point library functions. This is similar to the -mfloat-abi=softoption.
+        * vfpv3
+            * Enable the Arm®v7 VFPv3 floating-point extension. Disable the Advanced SIMD extension.
+        * vfpv3-d16
+            * Enable the Armv7 VFPv3-D16 floating-point extension. Disable the Advanced SIMD extension.
+        * vfpv3-fp16
+            * Enable the Armv7 VFPv3 floating-point extension, including the optional half-precision extensions. Disable the Advanced SIMD extension.
+        * vfpv3-d16-fp16
+            * Enable the Armv7 VFPv3-D16 floating-point extension, including the optional half-precision extensions. Disable the Advanced SIMD extension.
+        * vfpv3xd
+            * Enable the Armv7 VFPv3XD floating-point extension. Disable the Advanced SIMD extension.
+        * vfpv3xd-fp16
+            * Enable the Armv7 VFPv3XD floating-point extension, including the optional half-precision extensions. Disable the Advanced SIMD extension.
+        * neon
+            * Enable the Armv7 VFPv3 floating-point extension and the Advanced SIMD extension.
+        * neon-fp16
+            * Enable the Armv7 VFPv3 floating-point extension, including the optional half-precision extensions, and the Advanced SIMD extension.
+        * vfpv4
+            * Enable the Armv7 VFPv4 floating-point extension. Disable the Advanced SIMD extension.
+        * vfpv4-d16
+            * Enable the Armv7 VFPv4-D16 floating-point extension. Disable the Advanced SIMD extension.
+        * neon-vfpv4
+            * Enable the Armv7 VFPv4 floating-point extension and the Advanced SIMD extension.
+        * fpv4-sp-d16
+            * Enable the Armv7 FPv4-SP-D16 floating-point extension.
+        * fpv5-d16
+            * Enable the Armv7 FPv5-D16 floating-point extension.
+        * fpv5-sp-d16
+            * Enable the Armv7 FPv5-SP-D16 floating-point extension.
+        * fp-armv8
+            * Enable the Armv8 floating-point extension. Disable the cryptographic extension and the Advanced SIMD extension.
+        * neon-fp-armv8
+            * Enable the Armv8 floating-point extension and the Advanced SIMD extensions. Disable the cryptographic extension.
+        * crypto-neon-fp-armv8
+            * Enable the Armv8 floating-point extension, the cryptographic extension, and the Advanced SIMD extension.
+* 参考
+    * [arm32 gcc options](https://gcc.gnu.org/onlinedocs/gcc/ARM-Options.html)
+    * [Arm® Compiler armclang Reference Guide](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.100067_0609_00_en/chr1392305424052.html)
+    * [An Overview of the ARM Floating-Point Architecture](https://embeddedartistry.com/blog/2017/10/11/demystifying-arm-floating-point-compiler-options/)
+
+### aarch64
+
+* `-march`
+    * the same with aarch32
+* `-mcpu`
+    * the same with aarch32
+* `-mtune`
+    * the same with aarch32
+* `-mfpu`
+    * OUT OF DATE
+* `-mfloat-abi`
+    * OUT OF DATE
+
+* all possible options of `-mfpu` & `-mfloat-abi`
+    * Wandboard Dual (ARMv7 with NEON):
+        * `-march=armv7-a -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard`
+    * BeagleBone Black (ARMv7 with NEON and VFPv3):
+        * `-march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=hard`
+    * CubieTruck 5 (ARMv7 with NEON and VFPv4):
+        * `-march=armv7-a -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard`
+    * Banana Pi (ARMv7 with NEON and VFPv4):
+        * `-march=armv7-a -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard`
+    * Raspberry Pi 3 (ARMv7 with NEON and VFPv4):
+        * `-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard `
+    * Raspberry Pi 3 (ARMv8/Aarch32, with CRC, without Crypto):
+        * `-march=armv8-a+crc -mtune=cortex-a53 -mfpu=crypto-neon-fp-armv8 -mfloat-abi=hard`
+    * ODROID C2 (ARMv8/Aarch64, with CRC, without Crypto):
+        * `-march=armv8-a+crc -mtune=cortex-a53`
+    * PINE64 (ARMv8/Aarch64, with CRC and Crypto):
+        * `-march=armv8-a+crc+crypto -mtune=cortex-a53`
+    * Applied Micro Mustang (ARMv8/Aarch64, without CRC and Crypto):
+        * `-march=armv8-a -mtune=cortex-a53`
+    * LeMaker HiKey (ARMv8/Aarch64, with CRC and Crypto):
+        * `-march=armv8-a+crc+crypto -mtune=cortex-a53`
+    * Overdrive 1000 (ARMv8/Aarch64, with CRC and Crypto):
+        * `-march=armv8-a+crc+crypto -mtune=cortex-a57`
+    * Tx1 a57 aarch64 with neon enabled
+        * `-march=armv8-a+fp+simd -mtune=cortex-a57`
+    * 参考
+        * [ARM (Command Line)](https://cryptopp.com/wiki/Arm_(Command_Line))
+        * [arm64 gcc options](https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html)
+
+* arm arch & version ([Versions - ARM](https://en.wikichip.org/wiki/arm/versions))
+
+| ISA      | Variant     | Microarchitectures |                                                                                       |
+|----------|-------------|--------------------|---------------------------------------------------------------------------------------|
+| ARMv1    |             | Acorn              | ARM1                                                                                  |
+| ARMv2    |             | Acorn              | ARM2                                                                                  |
+| ARMv2a   |             | Acorn              | ARM3                                                                                  |
+|          |             | ARM                | ARM250                                                                                |
+| ARMv3    |             | ARM                | ARM6, ARM7                                                                            |
+| ARMv4    | ARMv4       | ARM                | ARM8                                                                                  |
+|          |             | DEC                | StrongARM                                                                             |
+|          | ARMv4T      | ARM                | ARM7TDMI, ARM9TDMI                                                                    |
+| ARMv5    | ARMv5TE     | ARM                | ARM7EJ, ARM9E, ARM10E                                                                 |
+|          |             | Intel              | XScale                                                                                |
+| ARMv6    | ARMv6       | ARM                | ARM11                                                                                 |
+|          | ARMv6\-M    | ARM                | Cortex\-M0, Cortex\-M1                                                                |
+| ARMv7    | ARMv7\-A    | ARM                | Cortex\-A5, Cortex\-A7, Cortex\-A8, Cortex\-A9, Cortex\-A12, Cortex\-A15, Cortex\-A17 |
+|          |             | Apple              | Swift                                                                                 |
+|          |             | Marvell            | Sheeva PJ4                                                                            |
+|          |             | Qualcomm           | Scorpion, Krait                                                                       |
+|          | ARMv7\-R    | ARM                | Cortex\-R4, Cortex\-R5, Cortex\-R7                                                    |
+|          | ARMv7\-M    | ARM                | Cortex\-M3                                                                            |
+|          | ARMv7E\-M   | ARM                | Cortex\-M4                                                                            |
+| ARMv8    | ARMv8\-A    | ARM                | Cortex\-A35, Cortex\-A53, Cortex\-A57, Cortex\-A72, Cortex\-A73                       |
+|          |             | Apple              | Cyclone, Typhoon, Twister, Hurricane, Zephyr                                          |
+|          |             | AMD                | K12                                                                                   |
+|          |             | AppliedMicro       | Storm, Shadowcat, Skylark                                                             |
+| ARMv8\.1 | ARMv8\.1\-A | Cavium             | Vulcan                                                                                |
+| ARMv8\.2 | ARMv8\.2\-A | ARM                | Cortex\-A55, Cortex\-A75, Cortex\-A76                                                 |
+|          |             |                    | Neoverse N1, Neoverse E1                                                              |
+|          |             | Ampere             | Quicksilver                                                                           |
+|          |             | Nvidia             | Carmel                                                                                |
+|          |             | Samsung            | M4, M5                                                                                |
+| ARMv8\.3 | ARMv8\.3\-A | Qualcomm           | Saphira                                                                               |
 
 ## instruction
 

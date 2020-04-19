@@ -7,6 +7,18 @@
 
 * [Shell编程基础](http://wiki.ubuntu.org.cn/Shell%E7%BC%96%E7%A8%8B%E5%9F%BA%E7%A1%80)
 
+* 赋值
+    * 运算赋值`((i=$j+$k))`
+    * 变量赋值`a="xxx"`中间没用空格
+* 字符串合并
+	* `var3=${var1}${var2}`
+* 枚举文件
+    * `for dirlist in $(ls ${cur_dir})`
+* 替换
+	* `$()`命令替换
+	* `${}`变量替换
+	* `$(())`算术运算替换
+
 # linux使用基本概念
 
 ## 文件系统
@@ -242,3 +254,20 @@ print "begin";} {sum += $1;} END {print "=="; print sum }'``：累加每一行�
     * ``find . -type f -perm 644``：找具有可执行权限的所有文件
     * ``find . -type f -perm 644 -print``：找具有可执行权限的所有文件（-print0 使用'\0'作为文件的定界符，这样就可以搜索包含空格的文件）
     * `find . -path "./out" -prune -o -name "*.txt"` 从当前目录下排除out目录，查找*.txt
+
+## 编码解码（encode&decode）
+
+<span id="text-encoder"></span>
+
+* `\r\n` -> `\n`
+    * `dos2unix`
+* 查看文本编码格式
+    * `enca yourfile`
+* 修改文本编码格式
+    * `enca -x utf-8 yourfile`
+* 编码流程
+    * +--------+ | 源程序 |----------源文件编码 +---+----+ | 编译器编译 +---+----+ |目标文件|----------程序内码 +---+----+ | 运行后输出信息 +---+----+ | 输出 |----------运行环境编码 +--------+
+* 常见编码格式
+    * ANSI类型:没有数据（7bit）（ANSI为一个协议标准，在不同地区的系统中对应不同的字符编码。内地：ANSI=gb2312，台湾：ANSI=big5，日本:ANSI=。。。）
+    * UTF-8类型:EF  BB  BF头(BOM),或者没有数据（7bit或1xxxxxxx的多位）
+    * UNICODE类型:FF FE头

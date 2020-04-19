@@ -3,9 +3,60 @@
 
 [main page](../entry.md)
 
+# build
+
+## windows
+
+* windows环境下的LIB/LIBPATH/INCLUDE/PATH的配置
+    * LIB/LIBPATH的区别
+        * LIB is for the linker, helps it find import and static libraries.
+        * LIBPATH is for the compiler, helps it find metadata files. Like type libraries, .NET assemblies, WinRT .winmd files.
+        * 参考：[What is the difference between the LIB and LIBPATH environment variables for MS Visual C/C++?](https://stackoverflow.com/questions/20483619/what-is-the-difference-between-the-lib-and-libpath-environment-variables-for-ms)
+* windows的交叉编译工具链
+    * CL.exe和link.exe均为visual studio提供的工具链，在vc/bin中可以找到不同的交叉工具链
+    * Specifies a path that the linker will search before it searches the path specified in the LIB environment option.
+    * [Use the Microsoft C++ toolset from the command line](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=vs-2017)
+* windows kits & visual studio 关联
+
+| Visual Studio | Windows Kits | Microsoft Visual Studio |
+|--------------------|-------------------|-------------------------------|
+| Visual Studio 2013 | Windows Kits 8\.1 | Microsoft Visual Studio 12\.0 |
+| Visual Studio 2015 | Windows Kits 8\.1 | Microsoft Visual Studio 14\.0 |
+| Visual Studio 2017 | Windows Kits 10   | Microsoft Visual Studio/2017  |
+
+* windows各运行时库
+    * MD链接动态库，优势与linux中的.so类似
+    * 多库编译时最好保证库的链接模式一致，否则会出现如下错误：
+        * `LNK2038: mismatch detected for 'RuntimeLibrary': value 'MT_StaticRelease' doesn't match value 'MD_DynamicRelease' in file.obj`
+
+| type                      | build option | lib name | enabled macros     |
+|---------------------------|--------------|----------|--------------------|
+| Single threaded           | /ML          | LIBC     | \(none\)           |
+| Static multiThread        | /MT          | LIBCMT   | \_MT               |
+| Dynamic Link\(DLL\)       | /MD          | MSVCRT   | \_MT \_DLL         |
+| Debug Single Thread       | /MLd         | LIBCD    | \_DEBUG            |
+| Debug Static MultiThread  | /MTd         | LIBCMTD  | \_DEBUG \_MT       |
+| Debug Dynamic Link\(DLL\) | /MDd         | MSVCRTD  | \_DEBUG \_MT \_DLL |
+
+
+## linux
+
+* `C_INCLUDE_PATH`
+    * for C header files
+* `CPLUS_INCLUDE_PATH`
+    * for C++ header files
+* `PATH`
+    * executables
+* `PYTHONPATH`
+    * Python libraries
+* `LIBRARY_PATH`
+    * is used by gcc before compilation to search directories containing static and shared libraries that need to be linked to your program.
+* `LD_LIBRARY_PATH`
+    * is used by your program to search directories containing shared libraries after it has been successfully compiled and linked.
+
 # makefile
 
-## 基本语法和函数
+## 基本语法
 
 * 常见符号
     * \$\@  表示目标文件
@@ -13,6 +64,10 @@
     * \$\<  表示第一个依赖文件
     * \$\?  表示比目标还要新的依赖文件列表
     * =赋值
+        * `=` 是最基本的赋值
+        * `:=` 是覆盖之前的值
+        * `?=` 是如果没有被赋值过就赋予等号后面的值
+        * `+=` 是添加等号后面的值
         * 以下面例子进行说明
         * =  B = $(A)时，虽然该语句之前A没有定义，但是在其后定义了，所以能输出later
         * := B :=$(A)时，它只会到这句语句之前去找A的值，因A没有定义所以什么都没有输出。
@@ -51,7 +106,7 @@
     * PHONY的作用是告诉make这个target不是真正的文件，只是一个虚拟的target。
 
 
-## 特殊语法和函数
+## 特殊语法
 
 * 仅存在target: dependency的结构
     * 很多场合会出现<target: dependency>而不带command的情况，其实只是command当时并没有给出，在makefile的其他位置给出了command。在target不被指定为目标的时，dependency中的代码并不被执行。
@@ -60,7 +115,35 @@
     ```
     $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CFLAGS := $(LOCAL_CFLAGS)
     ```
-* call函数
+* .c到.o
+    * 若有特殊情况，可单独对.o的编译进行干预下列方式的干预，但往往在配置好CFLAGS后，这个过程是自动的
+    
+    ```makefile
+    %.o: %.s
+		$(CC) -c $< $(CFLAGS) -o $@
+    ```
+
+    * 切记不可写成下述模式，否则每次编译的.o都来自于同一个sourcefile
+    
+    ```makefile
+    $(OBJS): $(SOURCES)
+        $(CC) -c $< $(CFLAGS) -o $@
+    ```
+
+    * -c后面接source file
+    * -o后面接输出，可以是exe输出，后面跟binary file，或者直接是.o输出
+
+    ```makefile
+    $(CC) $(CFLAGS) -o $(TARGET) $(OBJS) ../vecmath_lib.a
+    $(CC) -c $< $(CFLAGS) -o $@
+    ```
+
+## 函数
+
+* makefile里的函数
+    * makefile里的函数使用，和取变量的值类似，是以一个‘$’开始，然后是一个括号里面是函数名和需要的参数列表，多个变量用逗号隔开，像这样
+    * `return = $(functionname  arg1,arg2,arg3...)`
+* call
     * call函数是唯一一个可以用来创建新的参数化的函数。你可以写一个非常复杂的表达式，这个表达式中，你可以定义许多参数，然后你可以用call函数来向这个表达式传递参数。其语法是：
 
         ```
@@ -73,6 +156,16 @@
         reverse = $(1) $(2)
         foo = $(call reverse,a,b)
         ```
+
+* wildcard
+    * 使用：`SRC = $(wildcard *.c ./foo/*.c) `
+    * 搜索当前目录及./foo/下所有以.c结尾的文件，生成一个以空格间隔的文件名列表，并赋值给SRC.当前目录文件只有文件名，子目录下的文件名包含路径信息，比如./foor/bar.c
+* notdir
+    * 使用：`SRC = $(notdir wildcard)`
+    * 去除所有的目录信息，SRC里的文件名列表将只有文件名。
+* patsubst
+    * 使用：`OBJ = $(patsubst %.c %.o $(SRC))`
+    * patsubst是patten substitude的缩写，匹配替代的意思。这句是在SRC中找到所有.c 结尾的文件，然后把所有的.c换成.o。
 
 
 ## 易错点
