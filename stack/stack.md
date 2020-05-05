@@ -3,6 +3,7 @@
 
 [main page](../entry.md)
 
+* [cs courses](https://exploredegrees.stanford.edu/schoolofengineering/computerscience/#masterstext)
 * 处理堆栈
     * [统计学习那些事](https://cosx.org/2011/12/stories-about-statistical-learning/)
     * [那些年，我们一起追的 EB](https://cosx.org/2012/05/chase-after-eb/)
@@ -60,3 +61,10 @@ https://sc18.supercomputing.org/proceedings/tech_poster/poster_files/post193s2-f
     * John Morgan:黎曼几何、曲率、Ricci流以及在三维流形上的应用二讲  来自 <https://www.cnblogs.com/misaka01034/p/JMRiemannGeometry.html> 
     * 【理解黎曼几何】5. 黎曼曲率  来自 <https://www.spaces.ac.cn/archives/4014> 
     * 曲率 来自 <https://baike.baidu.com/item/%E6%9B%B2%E7%8E%87> 
+
+* PCA
+目标一，最大化投影矩阵方差，max(wx)(w为对应向量方向)，约束条件为||w||=1，可转换为max(wSw)，S=(1/n)sum(xx)，最终得到lamda=最大特征值(wSw=wλw=λ)
+即cross-correlation=E[(X-ux)(Y-uy)]
+目标二，最小化降维误差，min||x'-x||2，也可转换为最小化(1/n)sum(u'xx'u)=sum(uSu')，即得到最小特征值以及对应的特征向量
+其他，线性变换。X=AA'  A=VΛU'   X=VΣV'  ΛΛ=Σ  保持不变:R=V'A=V'VΛU'=ΛU' 降维：R=Va'A=Va'VΛU'
+详见-主成分分析PCA算法：为什么去均值以后的高维矩阵乘以协方差矩阵的特征向量矩阵就是"投影矩阵"

@@ -81,7 +81,41 @@
         * depending on the speed of PCI-e
     * virtualization UVM (Unified Memory)
         * 统一地址空间的最大优势其实不是性能，而是让 GPU 编程，特别是 GPGPU 编程变得更加简单。试想未来可以像写 CPU 代码一样写出高性能的、并行的 GPU 代码，而不需要关心如何在 CPU 与 GPU 之间拷贝数据，分配空间。
+* 架构
+    * Turing架构
+        * TU102芯片：72个流处理器，共享6MB L2 cache
+        * 流处理器：64个CUDA核，8个张量核（tensor core），64个int32计算单元，96KB L1数据处理器，256KB寄存器组
+        * TensorCore
+            * Turing架构通过调用WMMA指令在张量核上进行运算
+            * 每个张量核1 cycle 实现两个4x4矩阵相乘并累加到一个4x4矩阵
 
+# TPU
+
+* 架构
+    * 脉冲阵列计算
+        * 脉冲阵列的特性决定数据必须按照事先排布好的顺序依次进入。
+        * 脉冲阵列有启动时间，经过“行+列-1”的单位后，脉冲阵列才完全启动
+        * 脉冲方式多样，包括：
+            * 固定卷积核参数，横向脉冲输入特征图，纵向脉冲部分和。
+            * 固定部分和，横向脉冲输入特征图，纵向脉冲卷积核参数。
+        * TPU执行的指令通过PCIe总线进入，指令属于CISC指令集，平均完成一条指令需要的cycle 10~20
+
+# hisilicon(达芬奇)
+
+* 架构
+    * AI Core + AI CPU + CPU
+    * 单次运算实现16x16方阵的乘法操作（1 cycle），可理解为实现4096次乘加操作
+    * 特有的存储转换单元将输入数据按照AI Core要求的格式进行重拍
+    * 特有的较大的深入和输出缓冲区便于实现整图下层功能（参数和特征图一次性被加载到AI Core中执行）
+
+# FPGA
+
+* 特点
+    * 可重构性
+        * 静态重构：硬件执行程序之前对硬件进行重配置、重编程
+        * 动态重构：程序运行时按照具体需求进行硬件重配置
+    * 成本高
+        * 大规模使用时价格高于专用芯片
 
 # ARM
 
@@ -309,6 +343,16 @@
 | ARMv8\.3 | ARMv8\.3\-A | Qualcomm           | Saphira                                                                               |
 
 ## instruction
+
+### NEON
+
+* loads, stores, transpose, interleave and de-interleave instructions
+* permute: VMOV/VSWAP/VREV/VEXT/VTRN/VZIP/…
+* shift: VSLI/Round/Narrow/Long/Saturating
+* neon register
+    * Q - 128bit   D - 64bit   S- 32bit
+    * cortex v7: NEON contains 16 * 128bit register file
+    * cortex v8: NEON contains 32 * 128bit register file
 
 ### 指令集与内嵌汇编
 

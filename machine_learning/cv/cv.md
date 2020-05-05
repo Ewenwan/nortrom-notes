@@ -201,6 +201,27 @@
     * 优点：SIFT所查找到的关键点是一些十分突出，不会因光照，仿射变换和噪音等因素而变化的点，如角点、边缘点、暗区的亮点及亮区的暗点等。
     * 缺点：计算慢，实时性不高；有时特征点较少；对边缘光滑的目标无法准确提取特征点。
     * 应用： 物体辨识、机器人地图感知与导航、影像缝合、3D模型建立、手势辨识、影像追踪和动作比对
+* fast角点
+    * 思想：附近连续n个点大于或者小于中心点为角点
+    * 实现：3个像素差的圆，16个点，连续12个点大于或者小于中心点则被认为是角点（判断像素值大于或者小于中心值，需要增加一个阈值t）
+    * 快速算法：先判断对称位置的4个点，进行过滤后，再判断剩余的点是否为角点
+    * 参考：[FAST角点检测方法详解](https://blog.csdn.net/tostq/article/details/49314017)
+    
+    ![fast_corner.png](./data/fast_corner.png)
+
+* harris角点
+    * 简介：Harris角点检测是特征点检测的基础，提出了应用邻近像素点灰度差值概念，从而进行判断是否为角点、边缘、平滑区域。Harris角点检测原理是利用移动的窗口在图像中计算灰度变化值，其中关键流程包括转化为灰度图像、计算差分图像、高斯平滑、计算局部极值、确认角点。
+    * 思想：窗函数移动时，X和Y方向的灰度差值均较大。最终得到M矩阵，如果M矩阵的两个特征值均较大，则认为是角点
+    * 转换为角点响应函数为
+        * $R=detM-k(traceM)2   k~0.04-0.06$
+    * 参考：[Harris角点算法](https://www.cnblogs.com/polly333/p/5416172.html)
+
+    ![harris1](./data/harris1.png)
+
+    ![harris2](./data/harris2.png)
+
+    ![harris3](./data/harris3.png)
+
 * hog特征
     * 名称：Histogram of Oriented Gradient
     * 理论：在一副图像中，局部目标的表象和形状（appearance and shape）能够被梯度或边缘的方向密度分布很好地描述。
@@ -541,3 +562,34 @@
         * [prototxt](https://github.com/farmingyard/ShuffleNet/blob/master/shufflenet_1x_g3_deploy.prototxt)
 
         ![shufflenet.jpg](./data/shufflenet.jpg)
+
+# 应用
+
+## 目标跟踪
+
+* Near Online
+    * Near-Online Multi-target Tracking with Aggregated Local Flow Descriptor
+    * 实现机制
+        * 1.动态插入n帧的特征向量（比如5帧，特征向量可以是外观等）
+        * 2.将n帧加入已经构建的图（图宽为T帧）中，Occ为T，即将n帧中每个节点与现有图中所有节点建边（边的权值依据外观/速度/IOU等信息确定，可根据位置等信息裁剪边的数量）
+        * 3.计算T+n帧的KSP
+        * 4.提取前n帧KSP结果作为最终结果输出
+        * <--n--><-------T-n-------><--n-->
+* 跟踪与检测信息融合
+    * 基本原理：根据**t+1帧检测位置**和**t帧跟踪位置**推断出**t+1帧跟踪位置**
+    * 可行方案：
+        * 1.帧间匹配 根据色彩建模或外观等信息，建二分图的边，根据匈牙利匹配(low版batch)得出二分图关系，即建立匹配
+        * 2.位置估计 结合检测置信度，跟踪信息当前帧的速度，外观相似度，设定相应权值输出最终跟踪位置
+* ATK与simaese网络
+    * 原理：检测模板动态生成网络参数+跟踪模板根据网络参数输出位置信息
+    * 应用：单目标跟踪
+    * [Fully-Convolutional Siamese Networks for Object Tracking](https://arxiv.org/abs/1606.09549)
+* csk rsp
+    * 原理：分类器的输出即为响应值，预期响应值为2D高斯分布，最终根据最大响应判断跟踪结果
+    * 详解：分类器构建为2D循环卷积，计算量为$n^2n^2=O(n^4)$，转化为FFT频域点乘，计算量降低为$O(n^2logn)$
+        * $f=w^Tx$
+        * $w=sum(ax)$
+        * $L=(y-f)^2+\lambda{w^2}$ 对w求导
+    * 参考
+        * [Exploiting the Circulant Structure of Tracking-by-detection with Kernels](http://www.robots.ox.ac.uk/~joao/publications/henriques_eccv2012.pdf)
+        * [Adaptive Color Attributes for Real-Time Visual Tracking](http://www.cvl.isy.liu.se/research/objrec/visualtracking/colvistrack/CN_Tracking_CVPR14.pdf)

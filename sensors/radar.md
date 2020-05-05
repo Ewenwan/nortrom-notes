@@ -38,6 +38,27 @@
     * 振幅法测量
     * 相位法测量
 
+# 雷达基本概念
+
+## CFAR（恒虚警率）
+
+* CFAR
+    * 定义： Constant False Alarm Rate (CFAR) Detection。在雷达信号检测中，当外界干扰强度变化时，雷达能自动调整其灵敏度，使雷达的虚警概率保持不变，这种特性称为恒虚警率特性。
+* 方法
+    * Cell Averaging CFAR Detection
+        *  In a cell averaging CFAR detector, noise samples are extracted from both leading and lagging cells (called training cells) around the CUT. 
+        *  累加求均值整个训练区域可得到噪音幅值，然后调整灵敏度，并将信号减去噪音后根据预警值判断是否为实际信号
+
+        ![CFARDetectionExample.png](./data/radar/CFARDetectionExample.png)
+
+        * 参考：[Constant False Alarm Rate (CFAR) Detection](https://www.mathworks.com/help/phased/examples/constant-false-alarm-rate-cfar-detection.html)
+
+### DOA(Direction of arrival estimation)
+
+### 参考
+
+* [Automotive Radar](http://www.iet.unipi.it/m.greco/esami_lab/Radar/automotive_radar.pdf)
+* [DOA](https://www.comm.utoronto.ca/~rsadve/Notes/DOA.pdf)
 
 # 毫米波雷达
 
@@ -51,6 +72,9 @@
     * Continental - 短距雷达SRR320
     * Continental - 长距雷达ARS410/ARS430
     * Delphi - ESR
+* 特性
+    * Radar recv: $s(t)$ -- value of wave signal
+    * Radar output: fft2d -- distance and velocity map
 
 # 超声波雷达
 

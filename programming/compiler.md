@@ -76,3 +76,46 @@
     * 运行`r`
 * 调试脚本
     * ` ./gdbtest  -command=gdbtest.sh`
+
+# transpiler
+
+* all python to cpp transpiler projects
+    * [py14](https://github.com/lukasmartinelli/py14)
+    * [pythran](https://github.com/serge-sans-paille/pythran)
+    * [py2c](https://github.com/pradyun/py2c)
+    * [transpyle](https://pypi.org/project/transpyle/#id2)
+    * [cython](http://docs.cython.org/en/latest/src/tutorial/cython_tutorial.html)
+    * [pyrex](http://www.cosc.canterbury.ac.nz/greg.ewing/python/Pyrex/version/Doc/About.html)
+    * [nuikta](https://nuitka.net/doc/user-manual.html)
+    * [shedskin](https://github.com/shedskin/shedskin)
+* cpython based方案分析
+    * **难验证**：基于PyObject以及PyObject衍生出来的系列function缺乏可读性，难以验证生成代码的正确性
+    * **兼容性差**： 基于PyObject类型的c代码风格，很难整合其他编译器功能，包括热点分析，热点函数抓取或替换，以及基于模型的代码块分类等。
+    * **性能差**： 任何对象，哪怕是简单序列操作都被PyObject化，转化的c代码本身的性能堪忧
+* shedskin
+    * 框架部署分析
+        * 执行环境：需要在嵌入式平台中加入libgc和libpcre3库（[distributing binaries](https://shedskin.readthedocs.io/en/latest/documentation.html#distributing-binaries)）
+        * [libgc](https://github.com/ivmai/bdwgc)库，license: FSF(成分较为复杂，需要深入分析)，依赖库：无
+        * [libpcre3](http://www.pcre.org/)库，license：BSD，可直接商用，依赖库：无
+
+# TVM
+
+* 图表示
+    * NNVM
+        * NNVM相当于深度学习领域的LLVM，是一个神经网络中比较高级的中间表示模块，通常称为计算图。前端你框架只需要将其计算表达成NNVM中间表示，之后NNVM则统一的对图做与具体硬件和框架无关的优化。包括内存分配，数据类型和形状的推导，算子融合等。
+    * Relay
+        * Relay解决了静态图和动态图的矛盾。是一种专用于自动微分编程领域的特定域语言。
+    * 图优化方法
+        * OpFusion:算子融合
+        * FoldConstant:常量折叠
+        * CombineParallelConv2D:结合并行的卷积与运算
+        * FoldScaleAxis:折叠缩放轴
+        * AlterOpLayout:改变算子排布
+        * CanonicalizeOps:规范化算子
+        * EliminateCommonSubexpr:消除公共子表达式
+* 算子优化
+    * TVM低层次中间表达的特点
+        * Halide & HalideIR
+        * Auto-Tuning
+        * loopy循环变换工具，多面体模型分析
+        * python作为宿主语言

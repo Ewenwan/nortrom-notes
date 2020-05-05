@@ -214,3 +214,38 @@
     import compileall
     compileall.compile_dir(r'/path')
     ```
+
+# python implementation
+
+## 实现标准
+
+* [cpython](https://www.python.org/)
+    * CPython is the reference implementation of the Python programming language, written in C.
+* [jython](https://www.jython.org/)
+    * Jython (formerly known as JPython) is an alternative implementation of the Python programming language, written in Java, designed to run on Java platform. 
+* [ironpython](https://ironpython.net/)
+    * IronPython is an alternative implementation of the Python programming language, written in C#, designed to run on .NET Framework platform.
+* [PyPy](https://pypy.org/)
+    * PyPy is an alternative implementation of the Python programming language, written in RPython (Restricted Python).
+    * With PyPy, your Python program can **run faster than with CPython, because PyPy is a JIT (just-in-time) compiler**, while CPython is an interpreter.
+* [cython](https://cython.org/)
+    * Cython is **NOT an alternative implementation of the Python programming language**, it is a superset of the Python programming language which additionally supports calling C/C++ functions.
+    * Cython is a compiled language that is typically used to **generate C extensions** (***.pyd** on Windows, or ***.so** on Uinux-like) for Python.
+* 总结
+    * python有多种实现标准，包括cpython，jython，pypy等等，其中cpython为官方参考实现。
+* cpython v.s. cython
+    * Cpython:编写基于PyObject对象的c代码，生成的模块无缝兼容Python(Python也是基于该框架开发的)。可参考[cpython](https://github.com/python/cpython)代码仓，以及对应的[set](https://github.com/python/cpython/blob/master/Objects/setobject.c)对象实现。
+    * Cython: 编写带c特性(cdef)的python代码，转换成CPython代码，相对于CPython本身执行效率更高
+
+## PyObject
+
+* PyObject
+    * 对于cpython实现而言，pyobject是所有python对象的基类。
+    * Every value you can touch in Python is a PyObject in C. That includes lists, dictionaries, sockets, files, integers, strings, functions, classes, you name it. If you can touch it in Python, it’s a PyObject in C.
+    * 参考
+        * [Python构件：PyObject](https://python.freelycode.com/contribution/detail/380)
+        * [What is a PyObject in Python?](https://stackoverflow.com/questions/27683764/what-is-a-pyobject-in-python)
+        * [Python/C API Reference Manual](https://docs.python.org/3.7/c-api/intro.html)
+
+
+Every value you can touch in Python is a PyObject in C. That includes lists, dictionaries, sockets, files, integers, strings, functions, classes, you name it. If you can touch it in Python, it’s a PyObject in C.
